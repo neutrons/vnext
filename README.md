@@ -1,7 +1,6 @@
-# Python Project Template (examplepyapp)
+# VNEXT
 
-This repository contains a modern Python project managed entirely with [Pixi](https://pixi.sh/), a reproducible and declarative environment manager.
-All build and packaging metadata is consolidated in a single `pyproject.toml` file, following modern Python packaging standards.
+Neutron data reduction software for the VULCAN instrument, at SNS@ORNL
 
 ## Getting Started
 
@@ -63,78 +62,7 @@ This ensures your environment remains clean and all tasks are reproducible.
 - 🧪 **Testing** with `pytest` and code coverage reporting
 - 🧼 **Linting & formatting** with [`ruff`](https://docs.astral.sh/ruff/)
 - 🚀 **Task automation** via `pixi run`
-- 🔁 Supports CLI and optional GUI through modular structure in `src/packagenamepy/`
-
-## Codebase Adjustments
-
-1.  Adjust the branch protection rules for the new repo. By default, we should protect the `main` (stable), `qa` (release candidate), and `next` (development) branches.
-
-    1.1 Go to the `Settings` tab of the new repo.
-
-    1.2 Click on `Branches` on the left side.
-
-    1.3 Click on `Add rule` button.
-
-    1.4 Follow the instructions from Github.
-
-1.  Change the License if MIT license is not suitable for you project. For more information about licenses, please
-    refer to [Choose an open source license](https://choosealicense.com/).
-
-1.  Adjust pre-commit configuration file, `.pre-commit-config.yaml` to enable/disable the hooks you need. For more information about pre-commit, please refer to [pre-commit](https://pre-commit.com/).
-
-1.  Having code coverage, `codecov.yaml` is **strongly recommended**, please refer to [Code coverage](https://coverage.readthedocs.io/en/coverage-5.5/) for more information.
-
-1.  Adjust the GitHub Actions workflows for CI/CD to align with Pixi-only packaging. For more information about GitHub Actions, please refer to [GitHub Actions](https://docs.github.com/en/actions).
-
-    - Ensure that `.github/workflows/package.yaml` uses only `pixi run` commands for all build and publish steps.
-
-    - Validate that the following Pixi tasks are correctly invoked:
-
-      - `pixi run pypi-build`
-      - `pixi run pypi-publish`
-      - `pixi run conda-build`
-      - `pixi run conda-publish`
-
-    - Remove or disable any steps using `conda-build`, `python setup.py`, or `pip install .`.
-
-1.  The legacy `conda.recipe/meta.yaml` is no longer needed since Conda packaging is now handled via Pixi and `pyproject.toml`.
-
-    - You may delete the `conda.recipe` folder entirely, unless it's still needed for backward compatibility with older workflows.
-
-1.  Adjust `pyproject.toml` to match your project. For more information about `pyproject.toml`,
-    please refer to [pyproject.toml](https://www.python.org/dev/peps/pep-0518/).
-
-    - Specify package name at: pyproject.toml#L5
-
-    - Specify package description at: pyproject.toml#L6
-
-    - Specify any terminal entry points (terminal commands) at: pyproject.toml#30.
-
-1.  Adjust files for pixi
-
-    - After updating your environment file, make sure to run `pixi install` and commit the updated lock file.
-
-    - Specify package name at: pyproject.toml#L65
-
-      > In the example, invoking `packagename-cli` in a terminal is equivalent to running the python script `from packagenamepy.packagename import main; main()`
-
-    - Projects will use a single `pyproject.toml` file to manage all the project metadata, including the project name, version, author, license, etc.
-
-    - Python has moved away from `setup.cfg`/`setup.py`, and we would like to follow the trend for our new projects.
-
-1.  Specify package name at src/packagenamepy
-
-1.  Specify package name at: src/packagenamepy/packagename.py
-
-1.  If a GUI isn't used, delete the MVP structure at src/packagenamepy:
-
-    - mainwindow.py
-    - home/
-    - help/
-
-1.  Clear the content of this file and add your own README.md as the project README file.
-    We recommend putting badges of the project status at the top of the README file.
-    For more information about badges, please refer to [shields.io](https://shields.io/).
+- 🔁 Supports CLI and optional GUI through modular structure in `src/vnext/`
 
 ## Repository Adjustments
 
@@ -206,7 +134,7 @@ Similarly, if you are not publishing to conda, you can remove any related depend
 6. Install from TestPyPI to verify:
 
    ```bash
-   pip install --index-url https://test.pypi.org/simple/ examplepyapp
+   pip install --index-url https://test.pypi.org/simple/ vnext
    ```
 
 7. When ready, trigger the GitHub Action (`package.yaml`) to upload to PyPI.

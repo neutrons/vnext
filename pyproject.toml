@@ -2,20 +2,17 @@
 ### Project Metadata ###
 ########################
 [project]
-name = "examplepyapp"
-description = "Example Python repo for neutrons"
+name = "vnext"
+description = "Data reduction for VULCAN"
 dynamic = ["version"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = { text = "MIT" }
-keywords = ["neutrons", "example", "python"]
+keywords = ["neutrons", "python"]
 readme = "README.md"
 
 dependencies = [
   # Dependencies available from both PyPI and conda should be listed here
   "numpy>=2.2,<3",
-  "QtPy",
-  "PyQt5",
-  "pyqtgraph",
   # Dependencies only available from PyPI
   "bm3d-streak-removal>=0.2.0,<0.3",
   "pytest-playwright>=0.7.0,<0.8",
@@ -25,16 +22,13 @@ dependencies = [
 docs = ["sphinx", "sphinx_rtd_theme", "versioningit", "myst_parser"]
 
 [project.scripts]
-packagename-cli = "packagenamepy.packagename:main"
-
-[project.gui-scripts]
-packagenamepy = "packagenamepy.packagename:gui"
+vulcan-cli = "vulcan.vulcan:main"
 
 [project.urls]
-homepage = "https://github.com/neutrons/python_project_template/"
-repository = "https://github.com/neutrons/python_project_template/"
+homepage = "https://github.com/neutrons/vnext/"
+repository = "https://github.com/neutrons/vnext/"
 # documentation = add_url_to_readthedoc_here
-issues = "https://github.com/neutrons/python_project_template/issues"
+issues = "https://github.com/neutrons/vnext/issues"
 
 ####################
 ### Build config ###
@@ -48,19 +42,19 @@ requires = ["hatchling", "versioningit"]
 source = "versioningit"
 
 [tool.hatch.build.hooks.versioningit-onbuild]
-source-file = "src/packagenamepy/_version.py"
-build-file = "packagenamepy/_version.py"
+source-file = "src/vnext/_version.py"
+build-file = "vnext/_version.py"
 
 [tool.hatch.build]
 artifacts = [
-  "src/packagenamepy/_version.py",
-  "src/packagenamepy/**/*.yml",
-  "src/packagenamepy/**/*.yaml",
-  "src/packagenamepy/**/*.ini",
+  "src/vnext/_version.py",
+  "src/vnext/**/*.yml",
+  "src/vnext/**/*.yaml",
+  "src/vnext/**/*.ini",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/packagenamepy"]
+packages = ["src/vnext"]
 
 [tool.versioningit.vcs]
 method = "git"
@@ -79,7 +73,7 @@ dirty = "{version}"
 distance-dirty = "{next_version}.dev{distance}"
 
 [tool.versioningit.write]
-file = "src/packagenamepy/_version.py"
+file = "src/vnext/_version.py"
 
 ###################
 ### Pixi config ###
@@ -102,18 +96,13 @@ conda-pypi-map = { "conda-forge" = "pixi-mapping.json" }
 # Conda package dependencies
 numpy = "*"
 scipy = "*" # specify derivative dependencies here if you need them from conda
-# GUI
-pyqtgraph = "*"
-qt = "*"
-qtpy = "*"
-pyqt = "*"
 # pip-audit
 h2 = ">=4.3.0"     # Known vulnerability in <4.3.0
 brotli = ">=1.2.0"
 
 [tool.pixi.pypi-dependencies]
 # PyPI dependencies, including this package to allow local editable installs
-examplepyapp = { path = ".", editable = true }
+vnext = { path = ".", editable = true }
 
 # Pixi Build configuration - https://pixi.sh/latest/reference/pixi_manifest/#pixi-build
 
@@ -124,12 +113,9 @@ versioningit = "*"
 [tool.pixi.package.run-dependencies]
 python = ">=3.10"
 numpy = "*"
-QtPy = "*"
-pyqt = "*"
-pyqtgraph = "*"
 
 [tool.pixi.package]
-name = "examplepyapp"
+name = "vnext"
 version = "0.0.0"     # placeholder, overwritten by sync-version
 
 [tool.pixi.package.build]
@@ -144,7 +130,6 @@ default = { features = [
   "package",
   "test",
 ], solve-group = "default" }
-jupyter = { features = ["developer", "jupyter"], solve-group = "jupyter" }
 
 [tool.pixi.feature.test.dependencies]
 pytest = ">=6.2.4,<9.0.0" # constrained to match pytest-playwright requirements
@@ -172,11 +157,6 @@ versioningit = "*"
 sphinx = "*"
 sphinx_rtd_theme = "*"
 myst-parser = "*"
-
-[tool.pixi.feature.jupyter.dependencies]
-jupyterlab = "*"
-ipympl = "*"
-ipywidgets = "*"
 
 [tool.pixi.tasks]
 # Documentation
@@ -230,7 +210,7 @@ reset-toml = { cmd = "cp pyproject.toml.bak pyproject.toml; rm pyproject.toml.ba
 ##############
 
 [tool.pytest.ini_options]
-addopts = "-v --cov=packagenamepy --cov-report=term-missing"
+addopts = "-v --cov=vnext --cov-report=term-missing"
 pythonpath = [".", "src", "scripts"]
 testpaths = ["tests"]
 python_files = ["test*.py"]
@@ -258,7 +238,7 @@ select = ["A", "ARG", "ASYNC", "BLE", "C90", "E", "F", "I", "N", "UP032", "W"]
 ignore = []
 
 [tool.ruff.lint.isort]
-known-first-party = ["packagenamepy"]
+known-first-party = ["vnext"]
 
 [tool.ruff.format]
 quote-style = "double"

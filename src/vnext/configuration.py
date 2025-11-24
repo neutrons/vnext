@@ -13,7 +13,7 @@ from mantid.kernel import Logger
 logger = Logger("PACKAGENAME")
 
 # configuration settings file path
-CONFIG_PATH_FILE = os.path.join(Path.home(), ".packagename", "configuration.ini")
+CONFIG_PATH_FILE = os.path.join(Path.home(), ".vnext", "configuration.ini")
 
 
 class Configuration:
