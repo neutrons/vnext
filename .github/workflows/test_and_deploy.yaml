@@ -31,12 +31,6 @@ jobs:
       - name: Run unit tests
         run: pixi run test
 
-      - name: Upload coverage to codecov
-        uses: codecov/codecov-action@v5
-        if: github.actor != 'dependabot[bot]'
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
       - name: Dependency check
         run: |
           pixi run audit-deps
