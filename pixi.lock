@@ -210,7 +210,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.6.3-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/userpath-1.9.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/uv-0.9.25-h76e24b7_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/versioningit-3.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/virtualenv-20.36.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/xorg-libxau-1.0.12-hb03c661_1.conda
@@ -425,7 +424,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.6.3-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/userpath-1.9.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.9.25-hab132b7_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/versioningit-3.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/virtualenv-20.36.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/wheel-0.45.1-pyhd8ed1ab_1.conda
@@ -3688,18 +3686,6 @@ packages:
   license: Apache-2.0 OR MIT
   size: 15351305
   timestamp: 1768351230406
-- conda: https://conda.anaconda.org/conda-forge/noarch/versioningit-3.3.0-pyhd8ed1ab_0.conda
-  sha256: 4b9a3f6738ab6e241b12b2fe9258f7e051678b911ca0f0ab042becc29096ff51
-  md5: 57b96d99ac0f5a548f7001618db6a561
-  depends:
-  - importlib-metadata >=3.6
-  - packaging >=17.1
-  - python >=3.9
-  - tomli >=1.2,<3.0
-  license: MIT
-  license_family: MIT
-  size: 167034
-  timestamp: 1751113901223
 - conda: https://conda.anaconda.org/conda-forge/noarch/virtualenv-20.36.1-pyhd8ed1ab_0.conda
   sha256: fa0a21fdcd0a8e6cf64cc8cd349ed6ceb373f09854fd3c4365f0bc4586dccf9a
   md5: 6b0259cea8ffa6b66b35bae0ca01c447
@@ -3715,16 +3701,15 @@ packages:
   timestamp: 1768069793682
 - pypi: ./
   name: vnext
-  version: 0.2.0.dev11
-  sha256: 37c5b0ac3e9171289387ab5afbd7412971e79a00e8956dbf817f22aad687458a
+  version: 0.1.0
+  sha256: 51a8c924f000a9289065cdacdaf1cd12189c41a596843ba0156d34d7f55834ac
   requires_dist:
-  - bm3d-streak-removal>=0.2.0,<0.3
   - numpy>=2.2,<3
+  - bm3d-streak-removal>=0.2.0,<0.3
   - pytest-playwright>=0.7.0,<0.8
-  - myst-parser ; extra == 'docs'
   - sphinx ; extra == 'docs'
   - sphinx-rtd-theme ; extra == 'docs'
-  - versioningit ; extra == 'docs'
+  - myst-parser ; extra == 'docs'
   requires_python: '>=3.11'
 - conda: https://conda.anaconda.org/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
   sha256: 19ff205e138bb056a46f9e3839935a2e60bd1cf01c8241a5e172a422fed4f9c6
