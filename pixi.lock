@@ -3715,8 +3715,8 @@ packages:
   timestamp: 1768069793682
 - pypi: ./
   name: vnext
-  version: 0.2.0.dev9
-  sha256: 9fef0bae763a3f3c49981b3f9a15d01f32c30265f047e45597061544e4046626
+  version: 0.2.0.dev11
+  sha256: 37c5b0ac3e9171289387ab5afbd7412971e79a00e8956dbf817f22aad687458a
   requires_dist:
   - bm3d-streak-removal>=0.2.0,<0.3
   - numpy>=2.2,<3
