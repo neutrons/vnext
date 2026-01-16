@@ -24,16 +24,6 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           manifest-path: pyproject.toml
-          # Workaround: Dynamic versioning (versioningit) causes lock file version mismatch.
-          # We skip the editable package install and do it separately with pip.
-          # See: https://github.com/prefix-dev/pixi/pull/3092
-          run-install: false
-
-      - name: Install dependencies (skip local package)
-        run: pixi install --frozen --skip ${{ env.PKG_NAME }}
-
-      - name: Install local package
-        run: pixi run pip install --no-deps -e .
 
       - name: Run unit tests
         run: pixi run test
@@ -56,16 +46,6 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           manifest-path: pyproject.toml
-          # Workaround: Dynamic versioning (versioningit) causes lock file version mismatch.
-          # We skip the editable package install and do it separately with pip.
-          # See: https://github.com/prefix-dev/pixi/pull/3092
-          run-install: false
-
-      - name: Install dependencies (skip local package)
-        run: pixi install --frozen --skip ${{ env.PKG_NAME }}
-
-      - name: Install local package
-        run: pixi run pip install --no-deps -e .
 
       - name: Build conda package
         run: |
@@ -102,13 +82,6 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           manifest-path: pyproject.toml
-          # Workaround: Dynamic versioning (versioningit) causes lock file version mismatch.
-          # We skip the editable package install and do it separately with pip.
-          # See: https://github.com/prefix-dev/pixi/pull/3092
-          run-install: false
-
-      - name: Install dependencies (skip local package)
-        run: pixi install --frozen --skip ${{ env.PKG_NAME }}
 
       - name: Download conda package artifact
         uses: actions/download-artifact@v7
@@ -144,21 +117,10 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           manifest-path: pyproject.toml
-          # Workaround: Dynamic versioning (versioningit) causes lock file version mismatch.
-          # We skip the editable package install and do it separately with pip.
-          # See: https://github.com/prefix-dev/pixi/pull/3092
-          run-install: false
-
-      - name: Install dependencies (skip local package)
-        run: pixi install --frozen --skip ${{ env.PKG_NAME }}
-
-      - name: Install local package
-        run: pixi run pip install --no-deps -e .
 
       - name: Build pypi package
         run: |
           # build the package
-          VERSION=$(pixi run -- versioningit .)
           pixi run pypi-build
       # publish your distributions here (need to setup on PyPI first)
       - name: Publish package distributions to PyPI
