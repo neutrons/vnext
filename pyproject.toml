@@ -13,9 +13,6 @@ readme = "README.md"
 dependencies = [
   # Dependencies available from both PyPI and conda should be listed here
   "numpy>=2.2,<3",
-  # Dependencies only available from PyPI
-  "bm3d-streak-removal>=0.2.0,<0.3",
-  "pytest-playwright>=0.7.0,<0.8",
 ]
 
 [project.optional-dependencies]
@@ -109,9 +106,6 @@ pytest-xdist = "*"
 anaconda-client = ">=1.13.0,<2"
 twine = ">=6.1.0,<7"
 hatch = "*"
-
-[tool.pixi.feature.package.pypi-dependencies]
-toml-cli = "*"
 
 [tool.pixi.feature.developer.dependencies]
 pip = ">=25.3"
