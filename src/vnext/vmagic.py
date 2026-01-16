@@ -1,12 +1,14 @@
-from IPython import get_ipython
-from IPython.core.error import UsageError
 import shlex
 from typing import Dict, List
-from vutils import VNEXTOperations, parse_kv_tokens, to_int_if_possible
+
 import vnext_backend as backend
+from IPython import get_ipython
+from IPython.core.error import UsageError
+from vutils import VNEXTOperations, parse_kv_tokens, to_int_if_possible
 
 # 2) Create the adapter (ipts optional per your vutils.py)
 ops = VNEXTOperations(backend)
+
 
 def _normalize_commas(line: str) -> str:
     """
@@ -31,6 +33,7 @@ def _normalize_commas(line: str) -> str:
             out.append(ch)
     return "".join(out)
 
+
 def _split_tokens(line: str) -> List[str]:
     """
     Split by whitespace while preserving quotes; then strip stray/trailing commas.
@@ -39,6 +42,7 @@ def _split_tokens(line: str) -> List[str]:
     parts = shlex.split(normalized)
     parts = [p.rstrip(",") for p in parts if p and p != ","]
     return parts
+
 
 def _normalize_ipts(kwargs: Dict) -> Dict:
     """
@@ -50,10 +54,12 @@ def _normalize_ipts(kwargs: Dict) -> Dict:
             kwargs["ipts"] = to_int_if_possible(str(v))
     return kwargs
 
+
 def _make_handler(method_name: str):
     """
     Factory producing a line-magic handler bound to a specific method.
     """
+
     def _handler(line: str):
         tokens = _split_tokens(line)
         kwargs = parse_kv_tokens(tokens)
@@ -64,7 +70,9 @@ def _make_handler(method_name: str):
             valid = ", ".join(ops.method_names())
             raise UsageError(f"Unknown operation '{method_name}'. Valid methods: {valid}")
         return target(**kwargs)
+
     return _handler
+
 
 def _generic_dispatch(line: str):
     """
@@ -86,6 +94,7 @@ def _generic_dispatch(line: str):
         raise UsageError(f"Unknown operation '{method}'. Valid methods: {valid}")
     return target(**kwargs)
 
+
 def load_ipython_extension(ip=None):
     ip = ip or get_ipython()
     if ip is None:
@@ -105,6 +114,7 @@ def load_ipython_extension(ip=None):
         ip.register_magic_function(handler, magic_kind="line", magic_name=f"{name.lower()},")
     # Optional: enable automagic so magics can be used without %
     ip.run_line_magic("automagic", "on")
+
 
 def unload_ipython_extension(ip=None):
     # IPython does not provide a public API to unregister magics cleanly.
