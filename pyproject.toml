@@ -79,7 +79,7 @@ vnext = { path = ".", editable = true }
 hatchling = "*"
 
 [tool.pixi.package.run-dependencies]
-python = ">=3.11"
+python = ">=3.10"
 ipython = ">=9.9.0,<10"
 numpy = "*"
 
