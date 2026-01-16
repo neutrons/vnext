@@ -70,9 +70,9 @@ scipy = "*" # specify derivative dependencies here if you need them from conda
 h2 = ">=4.3.0"     # Known vulnerability in <4.3.0
 brotli = ">=1.2.0"
 
-#[tool.pixi.pypi-dependencies]
+[tool.pixi.pypi-dependencies]
 # PyPI dependencies, including this package to allow local editable installs
-#vnext = { path = ".", editable = true }
+vnext = { path = ".", editable = true }
 
 # Pixi Build configuration - https://pixi.sh/latest/reference/pixi_manifest/#pixi-build
 

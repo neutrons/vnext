@@ -2,7 +2,7 @@
 
 from importlib import metadata
 
-__version__ = metadata.version("postprocessing")
+__version__ = metadata.version("vnext")
 del metadata
 
 
