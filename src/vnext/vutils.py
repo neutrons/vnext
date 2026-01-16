@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterable, List, Union
 def coerce_scalar(text: str) -> Any:
     try:
         return ast.literal_eval(text)
-    except Exception:
+    except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
         return text
 
 
@@ -31,7 +31,7 @@ def parse_kv_tokens(tokens: Iterable[str]) -> Dict[str, Any]:
 def to_int_if_possible(s: str) -> Union[int, str]:
     try:
         return int(s, 10)
-    except Exception:
+    except ValueError:
         return s
 
 
@@ -49,23 +49,23 @@ class _Backend:
 
 class VNEXTOperations:
     _map = {
-        "VIEW": "vnextview",
-        "VBin": "vnextbin",
-        "VBineN": "vnextbinen",
-        "VBineNs": "vnextbinens",
+        "view": "vnextview",
+        "vbin": "vnextbin",
+        "vbenen": "vnextbinen",
+        "vbinens": "vnextbinens",
         "chopen": "vnextchopen",
         "chopens": "vnextchopens",
         "chop": "vnextchop",
-        "Vspf": "vnextspf",
+        "vspf": "vnextspf",
         "gsas": "vnextgsas",
         "vlog": "vdriverecorden",
-        "Vfit": "vnextfit",
-        "Vprm": "vnextprm",
+        "vfit": "vnextfit",
+        "vprm": "vnextprm",
         "cali": "vnextcali",
         "merge": "vnextmerge",
         "pixel": "vnextpixel2d",
         "pole": "vnextpole",
-        "VSUM": "vnextsumgsas",
+        "vsum": "vnextsumgsas",
     }
 
     def __init__(self, backend: Union[types.ModuleType, Dict[str, Any]]):
@@ -75,29 +75,29 @@ class VNEXTOperations:
         func = self._backend.get(self._map[key])
         return func(**_extra)
 
-    def VIEW(self, **_extra):
-        return self._call("VIEW", **_extra)
+    def view(self, **_extra):
+        return self._call("view", **_extra)
 
-    def VBin(self, **_extra):
-        return self._call("VBin", **_extra)
+    def vbin(self, **_extra):
+        return self._call("vbin", **_extra)
 
-    def VBineN(self, **_extra):
-        return self._call("VBineN", **_extra)
+    def vbin_en(self, **_extra):
+        return self._call("vbin_en", **_extra)
 
-    def VBineNs(self, **_extra):
-        return self._call("VBineNs", **_extra)
+    def vbin_ens(self, **_extra):
+        return self._call("vbin_ens", **_extra)
 
-    def chopen(self, **_extra):
-        return self._call("chopen", **_extra)
+    def chop_en(self, **_extra):
+        return self._call("chop_en", **_extra)
 
-    def chopens(self, **_extra):
-        return self._call("chopens", **_extra)
+    def chop_ens(self, **_extra):
+        return self._call("chop_ens", **_extra)
 
     def chop(self, **_extra):
         return self._call("chop", **_extra)
 
-    def Vspf(self, **_extra):
-        return self._call("Vspf", **_extra)
+    def vspf(self, **_extra):
+        return self._call("vspf", **_extra)
 
     def gsas(self, **_extra):
         return self._call("gsas", **_extra)
@@ -105,11 +105,11 @@ class VNEXTOperations:
     def vlog(self, **_extra):
         return self._call("vlog", **_extra)
 
-    def Vfit(self, **_extra):
-        return self._call("Vfit", **_extra)
+    def vfit(self, **_extra):
+        return self._call("vfit", **_extra)
 
-    def Vprm(self, **_extra):
-        return self._call("Vprm", **_extra)
+    def vprm(self, **_extra):
+        return self._call("vprm", **_extra)
 
     def cali(self, **_extra):
         return self._call("cali", **_extra)
@@ -123,8 +123,8 @@ class VNEXTOperations:
     def pole(self, **_extra):
         return self._call("pole", **_extra)
 
-    def VSUM(self, **_extra):
-        return self._call("VSUM", **_extra)
+    def vsum(self, **_extra):
+        return self._call("vsum", **_extra)
 
     @classmethod
     def required_backend_names(cls) -> List[str]:

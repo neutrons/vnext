@@ -10,10 +10,10 @@ def func(kwargs):
         return a
 
 
-def vnextview(IPTS, **kwargs):
+def vnextview(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextview: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextview: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}
 
 
 def vnextbin(**kwargs):
@@ -25,91 +25,91 @@ def vnextbin(**kwargs):
     return  # {"IPTS": IPTS, "kwargs": kwargs}
 
 
-def vnextbinN(IPTS, **kwargs):
+def vnextbin_n(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextbinN: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextbin_n: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}
 
 
-def vnextbinNs(IPTS, **kwargs):
+def vnextbin_ns(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextbinNs: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextbin_ns: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}
 
 
-def vnextchop(IPTS, **kwargs):
+def vnextchop(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextchop: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextchop: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}
 
 
-def vnextchopen(IPTS, **kwargs):
+def vnextchop_en(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextchopen: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextchope_n: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}
 
 
-def vnextchopens(IPTS, **kwargs):
+def vnextchop_ens(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextchopens: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextchop_ens: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}
 
 
-def vnextspf(IPTS, **kwargs):
+def vnextspf(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextspf: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextspf: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}
 
 
-def vnextgsas(IPTS, **kwargs):
+def vnextgsas(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextgsas: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextgsas: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}
 
 
-def vnextlog(IPTS, **kwargs):
+def vnextlog(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextlog: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextlog: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}
 
 
-def vnextfit(IPTS, **kwargs):
+def vnextfit(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextfit: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextfit: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}
 
 
-def vnextprm(IPTS, **kwargs):
+def vnextprm(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextprm: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextprm: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}
 
 
-def vnextcali(IPTS, **kwargs):
+def vnextcali(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextcali: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextcali: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}
 
 
-def vnextmerge(IPTS, **kwargs):
+def vnextmerge(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextmerge: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextmerge: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}
 
 
-def vnextpixel(IPTS, **kwargs):
+def vnextpixel(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextpixel: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextpixel: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}
 
 
-def vnextpole(IPTS, **kwargs):
+def vnextpole(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextpole: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextpole: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}
 
 
-def vnextsum(IPTS, **kwargs):
+def vnextsum(ipts, **kwargs):
     # Replace with real logic
-    print(f"vnextsum: IPTS={IPTS}, kwargs={kwargs}")
-    return {"IPTS": IPTS, "kwargs": kwargs}
+    print(f"vnextsum: IPTS={ipts}, kwargs={kwargs}")
+    return {"IPTS": ipts, "kwargs": kwargs}

@@ -3666,7 +3666,7 @@ packages:
 - pypi: ./
   name: vnext
   version: 0.1.0.dev0
-  sha256: 5689634cabdd4f5043db2869f5f858d3b8ecf332e82c6cb31fc6ac359e6280d3
+  sha256: fddb07710a6a59c39aa86d51a6e741538233c047541973bf1fb9f53d68ad0563
   requires_dist:
   - ipython>=9.9.0,<10
   - numpy>=2.2,<3
