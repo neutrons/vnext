@@ -3702,7 +3702,7 @@ packages:
 - pypi: ./
   name: vnext
   version: 0.1.0.dev0
-  sha256: 3fbfc5d380189bfed73f1b96996dfa28bc0623cd3e8c8146ca1eabbb87616b5b
+  sha256: aa3dc92e46e445ad9ed2cb0a83957929c23d2cf75fb6eec6389daa9e39118d23
   requires_dist:
   - numpy>=2.2,<3
   - bm3d-streak-removal>=0.2.0,<0.3
