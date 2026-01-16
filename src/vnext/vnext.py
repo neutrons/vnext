@@ -2,15 +2,15 @@
 
 import sys
 
-from mantid.kernel import Logger
-
 # make sure the algorithms have been loaded so they are available to the AlgorithmManager
 import mantid.simpleapi  # noqa: F401, E402 pylint: disable=unused-import, wrong-import-position
+from mantid.kernel import Logger
 
 from vnext import __version__  # noqa: E402 pylint: disable=wrong-import-position
 from vnext.configuration import Configuration  # noqa: E402 pylint: disable=wrong-import-position
 
 logger = Logger("VNEXT")
+
 
 class VNext:
     """Main Package window"""

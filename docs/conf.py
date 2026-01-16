@@ -5,21 +5,21 @@
 import os
 import sys
 
-import versioningit
+import toml
 
 sys.path.insert(0, os.path.abspath("../src"))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "Project Name"
+project = "vnext"
 copyright = "Copyright 2025"  # noqa A001
 author = "Author Name"
 
 # The short X.Y version
 # NOTE: need to specify the location of the pyproject.toml file instead of the
 #       location of the source tree
-version = versioningit.get_version("..")
+version = toml.load("../pyproject.toml")["project"]["version"]
 # The full version, including alpha/beta/rc tags
 release = ".".join(version.split(".")[:-1])
 
