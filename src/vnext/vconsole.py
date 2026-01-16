@@ -1,10 +1,11 @@
 import importlib
 
-import vutils
 from IPython.terminal.embed import InteractiveShellEmbed
 from IPython.terminal.prompts import Prompts
 from pygments.token import Token
 from traitlets.config import Config
+
+from vnext import vutils
 
 # Change to your real backend module name
 BACKEND_MODULE_NAME = "vnext_backend"
@@ -56,11 +57,13 @@ def main():
     shell.push({"ops": ops})
 
     # Load magics and enable automagic
-    shell.run_line_magic("load_ext", "vmagic")
+    shell.run_line_magic("load_ext", "vnext.vmagic")
     shell.run_line_magic("automagic", "on")
 
     shell()
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    main(sys.argv)

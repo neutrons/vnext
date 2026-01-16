@@ -1,10 +1,11 @@
 import shlex
 from typing import Dict, List
 
-import vnext_backend as backend
 from IPython import get_ipython
 from IPython.core.error import UsageError
-from vutils import VNEXTOperations, parse_kv_tokens, to_int_if_possible
+
+import vnext.backend as backend
+from vnext.vutils import VNEXTOperations, parse_kv_tokens, to_int_if_possible
 
 # 2) Create the adapter (ipts optional per your vutils.py)
 ops = VNEXTOperations(backend)
