@@ -114,7 +114,6 @@ hatch = "*"
 pip = ">=25.3"
 pip-audit = "*"
 pre-commit = "*"
-ruff = "*"
 pixi-pycharm = ">=0.0.10,<0.0.11"
 
 [tool.pixi.feature.docs.dependencies]
