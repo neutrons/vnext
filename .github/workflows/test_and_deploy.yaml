@@ -60,6 +60,7 @@ jobs:
         with:
           package-name: ${{ env.PKG_NAME }}
           module-name: ${{ env.MODULE_NAME }}
+          python-version: 3.11
           local-channel: /tmp/local-channel
 
       - name: Upload conda package as artifact
