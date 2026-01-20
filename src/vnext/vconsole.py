@@ -44,8 +44,8 @@ def main(argv=None):  # noqa: ARG001
         banner1=(
             "VNEXT IPython console\n"
             "- Automagic ON: call magics without leading %\n"
-            "- Magics provided: VIEW, VBin, VBineN, VBineNs, chopen, chopens, chop,\n"
-            "                   Vspf, gsas, vlog, Vfit, Vprm, cali, merge, pixel, pole, VSUM\n"
+            "- Magics provided: view, vbin, vbine_n, vbine_ns, chopen, chopens, chop,\n"
+            "                   vspf, gsas, vlog, vfit, vprm, cali, merge, pixel, pole, vsum\n"
             "Usage: METHOD IPTS [key=value ...]\n"
             "Ctrl-D to exit."
         ),
