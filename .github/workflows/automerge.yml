@@ -19,6 +19,10 @@ jobs:
           ref: next # going to commit to here
       - name: fetch qa
         run: git fetch origin qa:qa
+      - name: set git committer
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
@@ -29,7 +33,7 @@ jobs:
           echo "old version on next ${OLD_VERSION}"
       - name: merge qa into next
         run: |
-          git merge --allow-unrelated-histories qa
+          git merge --allow-unrelated-histories qa -m "Merge qa into next"
           pixi project version set ${OLD_VERSION}
           git diff
 
