@@ -24,18 +24,11 @@ jobs:
       - name: get current version
         run: |
           OLD_VERSION=$(pixi project version get)
+          echo "old version on next ${OLD_VERSION}"
       - name: merge qa into next
         run: |
           git merge origin/qa
           pixi project version set ${OLD_VERSION}
-
-      - name: Merge release-next into main
-        uses: devmasx/merge-branch@v1.4.0
-        with:
-          type: now
-          target_branch: main
-          message: Merge qa into next
-          github_token: ${{ secrets.GITHUB_TOKEN }}
 
 #  merge-ornl-into-main:
 #    runs-on: ubuntu-latest
