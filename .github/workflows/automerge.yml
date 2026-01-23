@@ -33,7 +33,7 @@ jobs:
           echo "old version on next ${OLD_VERSION}"
       - name: merge qa into next
         run: |
-          git merge --allow-unrelated-histories qa -m "Merge qa into next"
+          git merge origin/qa -m "Merge qa into next"
           pixi project version set ${OLD_VERSION}
           git diff
 
