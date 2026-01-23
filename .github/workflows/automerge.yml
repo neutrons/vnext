@@ -27,6 +27,7 @@ jobs:
           echo "old version on next ${OLD_VERSION}"
       - name: merge qa into next
         run: |
+          git fetch origin qa:qa # get qa branch
           git merge origin/qa
           pixi project version set ${OLD_VERSION}
 
