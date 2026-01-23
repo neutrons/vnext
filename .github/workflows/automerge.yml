@@ -20,7 +20,7 @@ jobs:
           fetch-depth: 0 # full git repository
       - name: fetch qa
         run: git fetch origin qa:qa
-      - name: set git committer
+      - name: set git user
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -28,15 +28,13 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           run-install: false
-      - name: get current version
+      - name: merge qa into next
         run: |
           OLD_VERSION=$(pixi project version get)
           echo "old version on next ${OLD_VERSION}"
-      - name: merge qa into next
-        run: |
           git merge origin/qa -m "Merge qa into next"
           pixi project version set ${OLD_VERSION}
-          git diff
+          git diff --quiet origin/next || exit 0 # exit early if everything is fine
 
 #  merge-ornl-into-main:
 #    runs-on: ubuntu-latest
