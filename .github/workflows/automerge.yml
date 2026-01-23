@@ -1,0 +1,53 @@
+# this uses the action to merge special branches on push
+# https://github.com/marketplace/actions/merge-branch
+name: Merge protected branches
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [qa, main]
+
+jobs:
+  merge-qa-into-next:
+    runs-on: ubuntu-latest
+    # run on qa branch and do not run in forks - TODO re-enable
+    #if: ${{ github.ref_name == 'qa' && github.repository_owner == 'neutrons' }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: next # going to commit to here
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.3
+        with:
+          run-install: false
+      - name: get current version
+        run: |
+          OLD_VERSION=$(pixi project version get)
+      - name: merge qa into next
+        run: |
+          git merge origin/qa
+          pixi project version set ${OLD_VERSION}
+
+      - name: Merge release-next into main
+        uses: devmasx/merge-branch@v1.4.0
+        with:
+          type: now
+          target_branch: main
+          message: Merge qa into next
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+#  merge-ornl-into-main:
+#    runs-on: ubuntu-latest
+#    # run on main branch and do not run in forks
+#    if: ${{ github.ref_name == 'main' && github.repository_owner == 'neutrons' }}
+#    steps:
+#      - uses: actions/checkout@v6
+#
+#      - name: Merge ornl-next into main
+#        uses: devmasx/merge-branch@v1.4.0
+#        with:
+#          type: now
+#          target_branch: next
+#          message: Merge main into next
+#          github_token: ${{ secrets.GITHUB_TOKEN }}
