@@ -29,8 +29,9 @@ jobs:
           echo "old version on next ${OLD_VERSION}"
       - name: merge qa into next
         run: |
-          git merge qa
+          git merge --allow-unrelated-histories qa
           pixi project version set ${OLD_VERSION}
+          git diff
 
 #  merge-ornl-into-main:
 #    runs-on: ubuntu-latest
