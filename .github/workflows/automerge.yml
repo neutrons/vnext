@@ -17,6 +17,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: next # going to commit to here
+          fetch-depth: 0 # full git repository
       - name: fetch qa
         run: git fetch origin qa:qa
       - name: set git committer
