@@ -30,11 +30,14 @@ jobs:
           run-install: false
       - name: merge qa into next
         run: |
-          OLD_VERSION=$(pixi project version get)
-          echo "old version on next ${OLD_VERSION}"
+          PREV_VERSION=$(pixi project version get)
+          echo "Previous version on next ${PREV_VERSION}"
           git merge origin/qa -m "Merge qa into next"
-          pixi project version set ${OLD_VERSION}
           git diff --quiet origin/next || exit 0 # exit early if everything is fine
+          # don't bump version if everything is fine
+          NEXT_VERSION=$(echo ${PREV_VERSION} | awk -F. -v OFS=. '{$NF += 1 ; print}')
+          pixi project version set ${NEXT_VERSION}
+          git commit -m "Set version to ${NEXT_VERSION}"
 
 #  merge-ornl-into-main:
 #    runs-on: ubuntu-latest
