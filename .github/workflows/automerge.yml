@@ -34,9 +34,11 @@ jobs:
           NEXT_VERSION=$(echo ${PREV_VERSION} | awk -F.dev -v OFS=.dev '{$NF += 1 ; print}')
           echo "Previous version on next ${PREV_VERSION}"
           echo "Next version will be ${NEXT_VERSION}"
-          git merge origin/qa -m "Merge qa into next"
+          # check that there is something to merge
+          git merge origin/qa --no-commit
           git diff --quiet origin/next || exit 0 # exit early if everything is fine
-          # don't bump version if everything is fine
+          # commit and advance the version
+          git commit -m "Merge qa into next"
           pixi project version set ${NEXT_VERSION}
           git commit -m "Set version to ${NEXT_VERSION}"
 
