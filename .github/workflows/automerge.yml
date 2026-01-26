@@ -61,6 +61,7 @@ jobs:
           run-install: false
       - name: merge main into next
         run: |
+          echo "use pixi to update the minor version"
           pixi project version minor # move to next minor
           # check that there is something to merge
           # git merge origin/main -m "Merge main into next"
@@ -68,6 +69,6 @@ jobs:
           # commit and advance the version
           NEXT_VERSION=$(pixi project version get | sed -E 's/\.dev.+//') # get version without dev
           NEXT_VERSION=$(echo ${NEXT_VERSION}.dev0)
-          echo "Next version will be ${NEXT_VERSION}"
+          echo "Settind dev version to be ${NEXT_VERSION}"
           pixi project version set ${NEXT_VERSION}
           #git commit -m "Set version to ${NEXT_VERSION}"
