@@ -12,12 +12,12 @@ jobs:
   merge-qa-into-next:
     runs-on: ubuntu-latest
     # run on qa branch and do not run in forks - TODO re-enable
-    #if: ${{ github.ref_name == 'qa' && github.repository_owner == 'neutrons' }}
+    # if: ${{ github.ref_name == 'qa' && github.repository_owner == 'neutrons' }}
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: next # going to commit to here
-          fetch-depth: 0 # full git repository
+          ref: next  # going to commit to here
+          fetch-depth: 0  # full git repository
       - name: fetch qa
         run: git fetch origin qa:qa
       - name: set git user
@@ -40,17 +40,34 @@ jobs:
           pixi project version set ${NEXT_VERSION}
           git commit -m "Set version to ${NEXT_VERSION}"
 
-#  merge-ornl-into-main:
-#    runs-on: ubuntu-latest
-#    # run on main branch and do not run in forks
-#    if: ${{ github.ref_name == 'main' && github.repository_owner == 'neutrons' }}
-#    steps:
-#      - uses: actions/checkout@v6
-#
-#      - name: Merge ornl-next into main
-#        uses: devmasx/merge-branch@v1.4.0
-#        with:
-#          type: now
-#          target_branch: next
-#          message: Merge main into next
-#          github_token: ${{ secrets.GITHUB_TOKEN }}
+  merge-main-into-next:
+    runs-on: ubuntu-latest
+    # run on main branch and do not run in forks
+    # if: ${{ github.ref_name == 'main' && github.repository_owner == 'neutrons' }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: next  # going to commit to here
+          fetch-depth: 0  # full git repository
+      - name: fetch main
+        run: git fetch origin main:main
+      - name: set git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.3
+        with:
+          run-install: false
+      - name: merge qa into next
+        run: |
+          pixi project version minor # move to next minor
+          # check that there is something to merge
+          # git merge origin/main -m "Merge main into next"
+          # && exit 0 #  exit early if everything is fine
+          # commit and advance the version - assume version has no suffix
+          NEXT_VERSION=$(pixi project version get) # get version
+          NEXT_VERSION=$(echo ${NEXT_VERSION}.dev0)
+          echo "Next version will be ${NEXT_VERSION}"
+          pixi project version set ${NEXT_VERSION}
+          #git commit -m "Set version to ${NEXT_VERSION}"
