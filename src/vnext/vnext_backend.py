@@ -38,7 +38,7 @@ def vnextchopse(runs=1, se="Temperature", dse=1, minv=None, maxv=None):
     -se(str): name of sample environment to be chopped
     - minv (float | None): minimum value
     - maxv (float | None):maximum value
-    - dse(float| None): sample envirnment bin"""
+    - dse(float| None): sample environment bin"""
     raise NotImplementedError("Implement chopse")
 
 
