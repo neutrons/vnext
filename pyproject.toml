@@ -67,6 +67,7 @@ brotli = ">=1.2.0"
 ipython = ">=9.9.0,<10"
 mantid = ">=6.14.0,<6.15"
 mantidprofiler = ">=1.1+d20260106,<2+0d"
+virtualenv = ">=20.36.1,<21"             # Known vulnerability in <20.36.1; capped due to https://github.com/pypa/hatch/issues/2193
 
 [tool.pixi.pypi-dependencies]
 # PyPI dependencies, including this package to allow local editable installs
