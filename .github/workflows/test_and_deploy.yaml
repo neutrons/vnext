@@ -96,6 +96,8 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: artifact-conda-package
+      - name: List package directory
+        run: ls -l ${{ steps.download.outputs.download-path }}
       - name: Upload package to anaconda
         uses: neutrons/conda-actions/publish@v1
         with:
