@@ -5565,8 +5565,8 @@ packages:
   timestamp: 1771967166128
 - pypi: ./
   name: vnext
-  version: 0.1.0.dev0
-  sha256: de75b38b33c7b6719df952cd183cac01b1af4059b94cd25066d8c6113876ccff
+  version: 0.1.0.dev1
+  sha256: 1874cefcfd475198d6aafc538be6d38f4387b5604f2af96c407ccd2d571dece2
   requires_dist:
   - ipython>=9.9.0,<10
   - sphinx ; extra == 'docs'

@@ -99,14 +99,14 @@ jobs:
       - name: List package directory
         run: ls -l ${{ steps.download.outputs.download-path }}
       - name: Upload package to anaconda
-        uses: neutrons/conda-actions/publish@dev
+        uses: neutrons/conda-actions/publish@v1
         with:
           anaconda-token: ${{ secrets.ANACONDA_TOKEN }}
           organization: ${{ env.CONDA_ORG }}
           package-path: ${{ steps.download.outputs.download-path }}/${{ env.PKG_NAME }}-*.conda
       - name: Remove old packages
         if: github.ref == 'refs/heads/next'
-        uses: neutrons/conda-pkg-remove@v1.0
+        uses: neutrons/conda-actions/pkg-remove@v1
         with:
           anaconda_token: ${{ secrets.ANACONDA_TOKEN }}
           organization: ${{ env.CONDA_ORG }}
