@@ -68,7 +68,7 @@ jobs:
           module-name: ${{ env.MODULE_NAME }}
           python-version: 3.11
           local-channel: /tmp/local-channel
-          extra-channels: mantid
+          extra-channels: mantid-ornl/label/rc mantid
           extra-commands: |
             python -c "import mantid"
       - name: Upload conda package as artifact
