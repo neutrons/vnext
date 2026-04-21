@@ -1,6 +1,60 @@
 import bisect
 import datetime
 import os
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional, Union
+
+
+@dataclass
+class FocusPositions:
+    l1: float
+    specnum: list[int]
+    l2: list[float]
+    polar: list[float]
+    aziumuthal: list[float]
+
+    def __init__(
+        self,
+        l1: float,
+        l2: list[float],
+        polar: list[float],
+        azimuthal: list[float],
+        specnum: Optional[list[int]] = None,
+    ):
+        """This will coerce all types and make sure all arrays are the same length"""
+        self.l1 = float(l1)
+        if not (len(l2) == len(polar) == len(azimuthal)):
+            raise ValueError(f"All arrays must be equal length: {len(l2)} == {len(polar)} == {len(azimuthal)}")
+        self.l2 = [float(item) for item in l2]  # convert to floats
+        self.polar = [float(item) for item in polar]  # convert to floats
+        self.azimuthal = [float(item) for item in azimuthal]  # convert to floats
+
+        if specnum is not None:  # implicit values for spectrum numbers
+            if len(l2) != len(specnum):
+                raise ValueError(f"All arrays must be equal length: {len(l2)} == {len(specnum)}")
+            self.specnum = [int(item) for item in specnum]
+        else:
+            self.specnum = list(range(1, len(self.l2) + 1))
+
+
+FilePath = Union[str, Path]
+
+
+def get_focuspositions_from_char_file(filepath: FilePath):
+    from mantid.simpleapi import PDLoadCharacterizations, mtd
+
+    # use mantid to parse the file
+    wkspname = "pdchar"
+    (_, _, l1, specnum, l2, polar, azimuthal) = PDLoadCharacterizations(
+        Filename=str(filepath), OutputWorkspace=wkspname
+    )
+    if wkspname in mtd:
+        mtd.remove(wkspname)  # it wasn't needed
+
+    # convert to the correct object type
+    return FocusPositions(l1=l1, specnum=specnum, l2=l2, polar=polar, azimuthal=azimuthal)
+
 
 # Each record is
 # record[0] calibration file with difc, mask, and grouping
