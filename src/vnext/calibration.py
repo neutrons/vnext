@@ -38,6 +38,7 @@ class FocusPositions:
             self.specnum = list(range(1, len(self.l2) + 1))
 
 
+# define a type for file paths that can be either a string or a Path object
 FilePath = Union[str, Path]
 
 
