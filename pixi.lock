@@ -4340,7 +4340,7 @@ packages:
 - pypi: ./
   name: vnext
   version: 0.1.0.dev3
-  sha256: 20451a66c6f6697055f412f1dbbb757c53f2961c996747950b2ec85adec85cb2
+  sha256: b53408dfca20504fe454ee234c796bfd6c527a685b77d9864fdfd5282be94de6
   requires_dist:
   - ipython>=9.9.0,<10
   - sphinx ; extra == 'docs'
