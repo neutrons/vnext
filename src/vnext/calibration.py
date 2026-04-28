@@ -5,6 +5,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
 
+from mantid.kernel import Logger
+
+from vnext import Configuration
+
+_log = Logger("vnext.calibration")
+
 
 @dataclass
 class FocusPositions:
@@ -42,7 +48,10 @@ class FocusPositions:
 FilePath = Union[str, Path]
 
 
-def get_focuspositions_from_char_file(filepath: FilePath):
+def _get_focuspositions_from_char_file(filepath: FilePath) -> FocusPositions:
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"Characterization file does not exist: {filepath}")
+
     from mantid.simpleapi import PDLoadCharacterizations, mtd
 
     # use mantid to parse the file
@@ -57,60 +66,93 @@ def get_focuspositions_from_char_file(filepath: FilePath):
     return FocusPositions(l1=l1, specnum=specnum, l2=l2, polar=polar, azimuthal=azimuthal)
 
 
-# Each record is
-# record[0] calibration file with difc, mask, and grouping
-# record[1] focus positions associated with grouping in calibration file
-# record[2] bin edges per bank in very implicit manner
-CalibrationFilesList = [
+# constant needed so we can use a bisect to find the correct calibration
+DISTANT_FUTURE_DATE = datetime.datetime(2100, 1, 1)
+
+# files that have DIFC , grouping, and mask information for reduction keyed by the valid date
+CALIB_FILE_LIST = {
+    datetime.datetime(2000, 1, 1): "vulcan_foc_all_2bank_11p.cal",
+    datetime.datetime(2017, 7, 1): "VULCAN_calibrate_2019_06_27.h5",
+    datetime.datetime(2022, 5, 13): "B123456DIFCs-12Cross-3456Cal_v4.h5",
+    datetime.datetime(2026, 1, 1): "B123456DIFCs-12Cross-3456789Cal.h5",
+    DISTANT_FUTURE_DATE: None,
+}
+
+# files that have the focus positions and bin edges for reduction keyed by the valid date
+FOCUS_POS_LIST = {
+    # really old ones are in a characterization file
+    datetime.datetime(2000, 1, 1): "VULCAN_Characterization_2Banks_v2.txt",
+    datetime.datetime(2017, 7, 1): "VULCAN_Characterization_3Banks_v2.txt",
+    datetime.datetime(2022, 5, 13): "VULCAN_Characterization_6Banks_v2.txt",
+    # newer ones are hard coded in the code since they are used for focusing and we don't want to have to
+    # read a file to get them
+    datetime.datetime(2026, 1, 1): FocusPositions(
+        l1=43.755,
+        l2=[2.296, 2.296, 2.07, 2.07, 2.07, 2.53, 2.07, 2.07, 2.53],
+        polar=[90, 90, 120, 150, 157, 65.5, 150, 157, 65.5],
+        azimuthal=[180, 0, 0, 0, 180, 180, 0, 0, 0],
+    ),
+    DISTANT_FUTURE_DATE: None,
+}
+
+"""
+PREVIOUS code also had bonus files for copying exact bin edges from vdrive
     # 2000-1-1 ~ 2017-6-30
-    [
-        "/SNS/VULCAN/shared/CALIBRATION/2011_1_7/vulcan_foc_all_2bank_11p.cal",
-        "/SNS/VULCAN/shared/CALIBRATION/2011_1_7/VULCAN_Characterization_2Banks_v2.txt",
-        "/SNS/VULCAN/shared/CALIBRATION/2011_1_7/vdrive_log_bin.dat",
-    ],
+    "/SNS/VULCAN/shared/CALIBRATION/2011_1_7/vdrive_log_bin.dat",
     # 2017-7-1 ~ 2022-11-4
-    [
-        "/SNS/VULCAN/shared/CALIBRATION/2019_6_27/VULCAN_calibrate_2019_06_27.h5",
-        "/SNS/VULCAN/shared/CALIBRATION/2021_2_15_CAL/VULCAN_Characterization_3Banks_v2.txt",
-        "/SNS/VULCAN/shared/CALIBRATION/2017_8_11_CAL/vdrive_3bank_bin.h5",
-    ],
+    "/SNS/VULCAN/shared/CALIBRATION/2017_8_11_CAL/vdrive_3bank_bin.h5",
     # 2022-11-5 ~ current
-    [
-        "/SNS/VULCAN/shared/CALIBRATION/B123456DIFCs-12Cross-3456Cal_v4.h5",  # used for focusing
-        "/SNS/VULCAN/shared/Malcolm/VULCAN_Characterization_6Banks_v2.txt",  # used for edit instrument geometry
-        "/SNS/VULCAN/shared/Malcolm/vdrive_6bank_bin.h5",  # used for matching bin edges to vdrive output
-    ],
-]
-ValidDateList = [
-    datetime.datetime(2000, 1, 1),
-    datetime.datetime(2017, 7, 1),
-    datetime.datetime(2022, 5, 13),
-    datetime.datetime(2100, 1, 1),
-]
+    "/SNS/VULCAN/shared/Malcolm/vdrive_6bank_bin.h5",  # used for matching bin edges to vdrive output
+"""
 
 
-def get_auto_reduction_calibration_files(nexus_file_name):
+def get_calibration_info(
+    date_aquired: datetime.datetime, config: Optional[Configuration] = None
+) -> tuple[Path, Optional[FocusPositions]]:
     """
-    get calibration files for auto reduction according to the date of the NeXus event file is generated
-    :param nexus_file_name:
-    :return:
+    Get the correct calibration files for reduction based on the date of acquisition of the data. This will use the
+    date of the NeXus file to determine which calibration files to use for reduction.
+
+    The calibration file will be returned as a Path object, and the focus positions will be returned as a
+    FocusPositions object. The focus positions may be None if there are no focus positions for the given date. The
+    calibration file may be None if there are no calibration files for the given date. The focus positions and
+    calibration file is not checked for existence.
     """
-    # check input
-    assert isinstance(nexus_file_name, str), (
-        f"Input event NeXus file {nexus_file_name} must be a string but not a {type(nexus_file_name)}."
-    )
-    if os.path.exists(nexus_file_name) is False:
-        raise RuntimeError(f"Event NeXus file {nexus_file_name} does not exist or is not accessible.")
-
-    # get the date of the NeXus file
-    event_file_time = datetime.datetime.fromtimestamp(os.path.getmtime(nexus_file_name))
-
+    # convert the dates into a list and use bisect to find the correct calibration files
+    valid_dates = list(CALIB_FILE_LIST.keys())
     # locate the position of the date in the list
-    char_index = bisect.bisect_right(ValidDateList, event_file_time) - 1
-    if char_index < 0 or char_index >= len(ValidDateList):
-        raise RuntimeError("File date is out of range.")
+    char_index = bisect.bisect_right(valid_dates, date_aquired) - 1
+    # error check that the result makes sense
+    if char_index < 0 or char_index >= len(valid_dates):
+        raise ValueError("File date is out of range for calibration files")
+    date = valid_dates[char_index]
+    _log.debug(f"Calibration information for date {date_aquired} is valid from {date}")
+    if date >= DISTANT_FUTURE_DATE:
+        raise ValueError("File date is out of range for calibration files")
 
-    return CalibrationFilesList[char_index]
+    # convert the calibration file into a Path
+    calib_file = CALIB_FILE_LIST[date]
+    if type(calib_file) is not Path:
+        if config is None:  # lazy creation
+            config = Configuration()
+        calib_path = config.get_calibration_path()
+        calib_file = calib_path / calib_file
+        # write the result back into the dict so we don't have to do it again
+        CALIB_FILE_LIST[date] = calib_file
+    #
+    focus_pos = FOCUS_POS_LIST[date]
+    if type(focus_pos) is not FocusPositions:
+        # create the path to a file to read
+        if config is None:  # lazy creation
+            config = Configuration()
+        calib_path = config.get_calibration_path()
+        focus_pos = calib_path / focus_pos
+        focus_pos = _get_focuspositions_from_char_file(focus_pos)  # changing type
+        # write the result back into the dict so we don't have to do it again
+        FOCUS_POS_LIST[date] = focus_pos
+
+    # return the results
+    return calib_file, focus_pos
 
 
 """

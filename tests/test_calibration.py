@@ -1,7 +1,13 @@
+import datetime
+from pathlib import Path
+
 import pytest
 from numpy import testing as nptest
 
-from vnext.calibration import FocusPositions, get_focuspositions_from_char_file
+from vnext import Configuration
+from vnext.calibration import FocusPositions, _get_focuspositions_from_char_file, get_calibration_info
+
+CALIB_DIR = Path(__file__).parent / "data"
 
 
 def test_focuspos():
@@ -36,10 +42,35 @@ def test_focuspos_not_parallel():
 
 
 def test_get_focuspos_from_char_file():
-    # TODO be resilient about file path
-    fp = get_focuspositions_from_char_file("tests/data/VULCAN_Characterization_3Banks_v2.txt")
+    fp = _get_focuspositions_from_char_file(CALIB_DIR / "VULCAN_Characterization_3Banks_v2.txt")
     nptest.assert_allclose(fp.l1, 43.755)
     nptest.assert_allclose(fp.l2, (2.296492906, 2.296492906, 1.999243))
     nptest.assert_allclose(fp.polar, (89.9260985, 89.9260985, 149.8646347))
     nptest.assert_allclose(fp.azimuthal, (0, 0, 0))
     assert fp.specnum == [1, 2, 3]
+
+
+def test_get_focuspos_from_char_file_no_exist():
+    with pytest.raises(FileNotFoundError):
+        _ = _get_focuspositions_from_char_file(CALIB_DIR / "does_not_exist.txt")
+
+
+def test_get_calibration_info_bad_date():
+    with pytest.raises(ValueError):
+        get_calibration_info(datetime.datetime(1999, 12, 31))
+    with pytest.raises(ValueError):
+        get_calibration_info(datetime.datetime(2100, 1, 2))
+
+
+def test_get_calibration_info_3bank():
+    config = Configuration(**{"Paths.calibration": str(CALIB_DIR)})
+    path, focus_pos = get_calibration_info(datetime.datetime(2020, 1, 1), config=config)
+    assert path.name == "VULCAN_calibrate_2019_06_27.h5"
+    assert focus_pos.l1 == 43.755
+
+
+def test_get_calibration_info_6bank():
+    config = Configuration(**{"Paths.calibration": str(CALIB_DIR)})
+    path, focus_pos = get_calibration_info(datetime.datetime(2026, 2, 14), config=config)
+    assert path.name == "B123456DIFCs-12Cross-3456789Cal.h5"
+    assert focus_pos.l1 == 43.755
