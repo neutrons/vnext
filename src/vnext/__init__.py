@@ -2,6 +2,8 @@
 
 from importlib import metadata
 
+from .configuration import Configuration  # noqa: F401
+
 __version__ = metadata.version("vnext")
 del metadata
 
