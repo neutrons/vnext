@@ -43,10 +43,6 @@ jobs:
   conda-build:
     name: Build conda package
     runs-on: ubuntu-latest
-    # Permissions key is required for CodeQL SARIF Upload, per the docs:
-    # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
-    permissions:
-      security-events: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -80,23 +76,6 @@ jobs:
         with:
           name: artifact-conda-package
           path: ${{ env.PKG_NAME }}-*.conda
-
-      - name: Scan dependencies
-        uses: anchore/scan-action@v7
-        id: scan
-        with:
-          path: ".pixi/envs/default"
-          fail-build: false
-
-      - name: upload Anchore scan SARIF report
-        uses: github/codeql-action/upload-sarif@v4
-        if: ${{ success() || failure() }} # if the previous step ran
-        with:
-          sarif_file: ${{ steps.scan.outputs.sarif }}
-
-      - name: Inspect action SARIF report
-        if: ${{ runner.debug == true }}
-        run: cat ${{ steps.scan.outputs.sarif }}
 
   publish:
     name: Upload package to anaconda
