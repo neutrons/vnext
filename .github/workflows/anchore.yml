@@ -76,7 +76,7 @@ jobs:
           micromamba run -n indexer python -m conda_index /tmp/local-channel/
       - name: Install package
         run:
-          micromamba create -n test -c /tmp/local-channel/ -c mantid vnext
+          micromamba create -n test -c /tmp/local-channel/ -c mantid-ornl/label/rc vnext
       - name: Run the Anchore Grype scan action
         uses: anchore/scan-action@v7
         id: scan
