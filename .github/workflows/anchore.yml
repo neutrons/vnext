@@ -75,13 +75,17 @@ jobs:
         run: |
           micromamba run -n indexer python -m conda_index /tmp/local-channel/
       - name: Install package
-        run:
+        id: installed
+        run: |
           micromamba create -n test -c /tmp/local-channel/ -c mantid-ornl/label/rc -c mantid vnext
+          micromamba activate test
+          echo "INSTALL_DIR=${CONDA_PREFIX}" >> "$GITHUB_OUTPUT"
+
       - name: Run the Anchore Grype scan action
         uses: anchore/scan-action@v7
         id: scan
         with:
-          path: ".pixi/envs/installtest"
+          path: ${{ steps.installed.outputs.INSTALL_DIR }}
           fail-build: true
           severity-cutoff: critical
       - name: Upload vulnerability report
