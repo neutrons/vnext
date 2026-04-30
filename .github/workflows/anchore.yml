@@ -65,18 +65,15 @@ jobs:
         with:
           environment-name: indexer
           init-shell: bash
-          condarc-file: |
-            channels:
-              - conda-forge
           create-args: >-
+            -c conda-forge
             conda-build
             conda-index
       - name: Debug micromamba
         run: env | grep -i conda
       - name: Index local package
         run: |
-          micromamba activate indexer
-          python -m conda_index /tmp/local-channel/linux-64
+          micromamba run -e indexer python -m conda_index /tmp/local-channel/linux-64/
       - name: Install package
         run:
           micromamba create -n test -c /tmp/local-channel/linux-64 -c mantid vnext
