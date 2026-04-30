@@ -78,6 +78,8 @@ jobs:
         id: installed
         run: |
           micromamba create -n test -c /tmp/local-channel/ -c mantid-ornl/label/rc -c mantid vnext
+          echo "Activate environment"
+          eval "$(micromamba shell hook --shell bash)"
           micromamba activate test
           echo "INSTALL_DIR=${CONDA_PREFIX}" >> "$GITHUB_OUTPUT"
 
