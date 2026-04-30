@@ -60,7 +60,7 @@ jobs:
           mkdir -p /tmp/local-channel/linux-64
           cp *.conda /tmp/local-channel/linux-64
           ls /tmp/local-channel/linux-64
-      - name: Index local package
+      - name: Setup micromamba
         uses: mamba-org/setup-micromamba@v2
         with:
           environment-name: indexer
@@ -71,23 +71,15 @@ jobs:
           create-args: >-
             conda-build
             conda-index
-          run: |
-            python -m conda_index /tmp/local-channel/linux-64
-      - name: Setup micromamba
-        uses: mamba-org/setup-micromamba@v2
-        env:
-          ACTIONS_STEP_DEBUG: true
-        with:
-          environment-name: installtest
-          init-shell: bash
-          condarc-file: |
-            channels:
-              - /tmp/local-channel/linux-64
-              - mantid
-          create-args: >-
-            vnext
       - name: Debug micromamba
         run: env | grep -i conda
+      - name: Index local package
+        run: |
+          micromamba activate indexer
+          python -m conda_index /tmp/local-channel/linux-64
+      - name: Install package
+        run:
+          micromamba create -n test -c /tmp/local-channel/linux-64 -c mantid vnext
       - name: Run the Anchore Grype scan action
         uses: anchore/scan-action@v7
         id: scan
