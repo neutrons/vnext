@@ -73,10 +73,10 @@ jobs:
         run: env | grep -i conda
       - name: Index local package
         run: |
-          micromamba run -n indexer python -m conda_index /tmp/local-channel/linux-64/
+          micromamba run -n indexer python -m conda_index /tmp/local-channel/
       - name: Install package
         run:
-          micromamba create -n test -c /tmp/local-channel/linux-64 -c mantid vnext
+          micromamba create -n test -c /tmp/local-channel/ -c mantid vnext
       - name: Run the Anchore Grype scan action
         uses: anchore/scan-action@v7
         id: scan
