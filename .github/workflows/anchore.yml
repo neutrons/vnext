@@ -60,6 +60,19 @@ jobs:
           mkdir -p /tmp/local-channel/linux-64
           cp *.conda /tmp/local-channel/linux-64
           ls /tmp/local-channel/linux-64
+      - name: Index local package
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-name: indexer
+          init-shell: bash
+          condarc-file: |
+            channels:
+              - conda-forge
+          create-args: >-
+            conda-build
+            conda-index
+          run: |
+            python -m conda_index /tmp/local-channel/linux-64
       - name: Setup micromamba
         uses: mamba-org/setup-micromamba@v2
         env:
