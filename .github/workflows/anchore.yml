@@ -20,32 +20,14 @@ on:
   schedule:
     - cron: '42 13 * * 3'
 
+env:
+  PKG_NAME: vnext
+
 permissions:
   contents: read
 
 jobs:
-  #Build-package:
-  #  runs-on: ubuntu-latest
-  #  steps:
-  #    - name: Check out the code
-  #      uses: actions/checkout@v4
-  #    - name: Setup pixi
-  #      uses: prefix-dev/setup-pixi@v0.9.5
-  #      with:
-  #        manifest-path: pyproject.toml
-  #    - name: Build conda package
-  #      run: |
-  #        pixi run conda-build
-  #        mkdir -p /tmp/local-channel/linux-64
-  #        cp *.conda /tmp/local-channel/linux-64
-
-  scan-package:
-    permissions:
-      contents: read # for actions/checkout to fetch code
-      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-      # only required for a private repository by github/codeql-action/upload-sarif
-      # to get the Action run status
-      actions: read
+  build-package:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the code
@@ -57,9 +39,36 @@ jobs:
       - name: Build conda package
         run: |
           pixi run conda-build
-          mkdir -p /tmp/local-channel/linux-64
-          cp *.conda /tmp/local-channel/linux-64
-          ls /tmp/local-channel/linux-64
+      - name: Upload conda package as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: artifact-conda-package
+          path: ${{ env.PKG_NAME }}-*.conda
+
+  scan-package:
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      # only required for a private repository by github/codeql-action/upload-sarif
+      # to get the Action run status
+      actions: read
+    needs: [build-package]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download conda package artifact
+        id: download
+        uses: actions/download-artifact@v8
+        with:
+          name: artifact-conda-package
+      - name: Move package into local repo
+        id: channel
+        run: |
+          LOCAL_CHANNEL="${{ runner.temp }}/local-channel/"
+          mkdir -p ${LOCAL_CHANNEL}/linux-64
+          cp ${{ steps.download.outputs.download-path }}/*.conda ${LOCAL_CHANNEL}/linux-64
+          ls ${LOCAL_CHANNEL}/linux-64
+          echo "dir=${LOCAL_CHANNEL}" >> "$GITHUB_OUTPUT"
+
       - name: Setup micromamba
         uses: mamba-org/setup-micromamba@v2
         with:
@@ -69,19 +78,26 @@ jobs:
             -c conda-forge
             conda-build
             conda-index
-      - name: Debug micromamba
-        run: env | grep -i conda
       - name: Index local package
         run: |
-          micromamba run -n indexer python -m conda_index /tmp/local-channel/
+          micromamba run -n indexer python -m conda_index ${{ steps.channel.outputs.dir }}
+
       - name: Install package
         id: installed
         run: |
-          micromamba create -n test -c /tmp/local-channel/ -c mantid-ornl/label/rc -c mantid vnext
+          micromamba create -n test -c ${{ steps.channel.outputs.dir }} \
+                                  -c mantid-ornl/label/rc -c mantid vnext
           echo "Activate environment"
           eval "$(micromamba shell hook --shell bash)"
           micromamba activate test
           echo "install_dir=${CONDA_PREFIX}" >> "$GITHUB_OUTPUT"
+
+      - name: Check out grype config
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .grype.yaml
+          sparse-checkout-cone-mode: false
 
       - name: Run the Anchore Grype scan action
         uses: anchore/scan-action@v7
