@@ -9,7 +9,7 @@
 # action usage and parameters, see https://github.com/anchore/scan-action. For more
 # information on Anchore's container image scanning tool Grype, see
 # https://github.com/anchore/grype
-name: grype vulnerability scan
+name: vulnerability scan
 
 on:
   push:
@@ -85,7 +85,7 @@ jobs:
       - name: Install package
         id: installed
         run: |
-          micromamba create -n test -c ${{ steps.channel.outputs.dir }} \
+          micromamba create -y -n test -c ${{ steps.channel.outputs.dir }} \
                                   -c mantid-ornl/label/rc -c mantid vnext
           echo "Activate environment"
           eval "$(micromamba shell hook --shell bash)"
@@ -105,7 +105,7 @@ jobs:
         with:
           path: ${{ steps.installed.outputs.install_dir }}
           fail-build: false
-          severity-cutoff: high
+          only-fixed: true # don't create notifications for things without fixes
       - name: Upload vulnerability report
         uses: github/codeql-action/upload-sarif@v4
         if: ${{ success() || failure() }} # if the previous step ran
