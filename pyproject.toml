@@ -64,7 +64,6 @@ conda-pypi-map = { "conda-forge" = "pixi-mapping.json" }
 ## These tables override the dependencies listed in the [project] section
 
 [tool.pixi.dependencies]
-# pip-audit
 h2 = ">=4.3.0"                 # Known vulnerability in <4.3.0
 brotli = ">=1.2.0"
 ipython = ">=9.9.0,<10"
@@ -116,7 +115,6 @@ hatch = "*"
 
 [tool.pixi.feature.developer.dependencies]
 pip = ">=25.3"
-pip-audit = "*"
 pre-commit = "*"
 pixi-pycharm = ">=0.0.10,<0.0.11"
 
@@ -148,8 +146,6 @@ conda-build = { cmd = "pixi build", description = "Build the conda package comma
 conda-publish = { cmd = "anaconda upload *.conda", description = "Publish the .conda package to anaconda.org", depends-on = [
   "conda-build",
 ] }
-# Misc
-audit-deps = { cmd = "pip-audit --local -s osv --ignore=CVE-2026-3219", description = "Audit the package dependencies for vulnerabilities" }
 # Cleaning
 clean = { cmd = 'rm -rf .pytest_cache .ruff_cache **/*.egg-info **/dist **/__pycache__', description = "Clean up various caches and build artifacts" }
 clean-conda = { cmd = "rm -f *.conda", description = "Clean the local .conda build artifacts" }
