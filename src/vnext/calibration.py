@@ -82,10 +82,23 @@ CALIB_FILE_LIST = {
 FOCUS_POS_LIST = {
     # really old ones are in a characterization file
     datetime.datetime(2000, 1, 1): "VULCAN_Characterization_2Banks_v2.txt",
-    datetime.datetime(2017, 7, 1): "VULCAN_Characterization_3Banks_v2.txt",
-    datetime.datetime(2022, 5, 13): "VULCAN_Characterization_6Banks_v2.txt",
     # newer ones are hard coded in the code since they are used for focusing and we don't want to have to
     # read a file to get them
+    datetime.datetime(2017, 7, 1):
+    # copied from VULCAN_Characterization_3Banks_v2.txt
+    FocusPositions(
+        l1=43.755,
+        l2=[2.288371, 2.288371, 2.061211, 2.058998, 2.020524, 2.533234],
+        polar=[89.966, 89.966, 120.053, 150.040, 157.127, 65.518],
+        azimuthal=[0, 0, 0, 0, 0, 0],
+    ),
+    datetime.datetime(2022, 5, 13):  # copied from "VULCAN_Characterization_6Banks_v2.txt",
+    FocusPositions(
+        l1=43.755,
+        l2=[2.296492906, 2.296492906, 1.999243],
+        polar=[89.9260985, 89.9260985, 149.8646347],
+        azimuthal=[0, 0, 0],
+    ),
     datetime.datetime(2026, 1, 1): FocusPositions(
         l1=43.755,
         l2=[2.296, 2.296, 2.07, 2.07, 2.07, 2.53, 2.07, 2.07, 2.53],
@@ -103,6 +116,9 @@ PREVIOUS code also had bonus files for copying exact bin edges from vdrive
     "/SNS/VULCAN/shared/CALIBRATION/2017_8_11_CAL/vdrive_3bank_bin.h5",
     # 2022-11-5 ~ current
     "/SNS/VULCAN/shared/Malcolm/vdrive_6bank_bin.h5",  # used for matching bin edges to vdrive output
+
+It has ben decided that it was always a matter of defining histograms by bin boundary vs bin centers. Inputs are being
+modified to account for this.
 """
 
 
