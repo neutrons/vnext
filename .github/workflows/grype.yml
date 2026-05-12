@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.9.5
         with:
@@ -70,7 +70,7 @@ jobs:
           echo "dir=${LOCAL_CHANNEL}" >> "$GITHUB_OUTPUT"
 
       - name: Setup micromamba
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@v3
         with:
           environment-name: indexer
           init-shell: bash
@@ -93,7 +93,7 @@ jobs:
           echo "install_dir=${CONDA_PREFIX}" >> "$GITHUB_OUTPUT"
 
       - name: Check out grype config
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           sparse-checkout: |
             .grype.yaml
