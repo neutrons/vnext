@@ -75,7 +75,7 @@ jobs:
         with:
           package-name: ${{ env.PKG_NAME }}
           local-channel: ${{ runner.temp }}/local-channel/
-          extra-channels: neutrons mantid
+          extra-channels: mantid-ornl/label/rc neutrons mantid
 
       - name: Check out grype config
         uses: actions/checkout@v6
