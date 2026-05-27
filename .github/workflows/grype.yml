@@ -74,6 +74,7 @@ jobs:
         uses: neutrons/conda-actions/pkg-install@grype_act
         with:
           package-name: ${{ env.PKG_NAME }}
+          local-channel: ${{ runner.temp }}/local-channel/
           extra-channels: neutrons mantid
 
       - name: Check out grype config
