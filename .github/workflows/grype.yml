@@ -69,28 +69,12 @@ jobs:
           ls ${LOCAL_CHANNEL}/linux-64
           echo "dir=${LOCAL_CHANNEL}" >> "$GITHUB_OUTPUT"
 
-      - name: Setup micromamba
-        uses: mamba-org/setup-micromamba@v3
-        with:
-          environment-name: indexer
-          init-shell: bash
-          create-args: >-
-            -c conda-forge
-            conda-build
-            conda-index
-      - name: Index local package
-        run: |
-          micromamba run -n indexer python -m conda_index ${{ steps.channel.outputs.dir }}
-
       - name: Install package
         id: installed
-        run: |
-          micromamba create -y -n test -c ${{ steps.channel.outputs.dir }} \
-                                  -c mantid-ornl/label/rc -c mantid vnext
-          echo "Activate environment"
-          eval "$(micromamba shell hook --shell bash)"
-          micromamba activate test
-          echo "install_dir=${CONDA_PREFIX}" >> "$GITHUB_OUTPUT"
+        uses: neutrons/conda-actions/pkg-install@grype_act
+        with:
+          package-name: ${{ env.PKG_NAME }}
+          extra-channels: neutrons mantid
 
       - name: Check out grype config
         uses: actions/checkout@v6
@@ -99,18 +83,7 @@ jobs:
             .grype.yaml
           sparse-checkout-cone-mode: false
 
-      - name: Run the Anchore Grype scan action
-        uses: anchore/scan-action@v7
-        id: scan
+      - name: Run the Grype scan action
+        uses: neutrons/conda-actions/pkg-install@grype_act
         with:
           path: ${{ steps.installed.outputs.install_dir }}
-          fail-build: false
-          only-fixed: true # don't create notifications for things without fixes
-      - name: Upload vulnerability report
-        uses: github/codeql-action/upload-sarif@v4
-        if: ${{ success() || failure() }} # if the previous step ran
-        with:
-          sarif_file: ${{ steps.scan.outputs.sarif }}
-      - name: Inspect action SARIF report
-        if: ${{ runner.debug == true }}
-        run: cat ${{ steps.scan.outputs.sarif }}
