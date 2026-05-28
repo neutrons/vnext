@@ -51,23 +51,23 @@ def _normalize_ipts(kwargs: dict[str, Any]) -> dict[str, Any]:
 @magics_class
 class VNEXTMagics(Magics):
     _map: ClassVar[dict[str, Callable[..., Any]]] = {
-        "view":    VNEXTBackend.vnextview,
-        "vbin":    VNEXTBackend.vnextbin,
-        "vbinen":  VNEXTBackend.vnextbin_n,
+        "view": VNEXTBackend.vnextview,
+        "vbin": VNEXTBackend.vnextbin,
+        "vbinen": VNEXTBackend.vnextbin_n,
         "vbinens": VNEXTBackend.vnextbin_ns,
-        "chopen":  VNEXTBackend.vnextchop_en,
+        "chopen": VNEXTBackend.vnextchop_en,
         "chopens": VNEXTBackend.vnextchop_ens,
-        "chop":    VNEXTBackend.vnextchop,
-        "vspf":    VNEXTBackend.vnextspf,
-        "gsas":    VNEXTBackend.vnextgsas,
-        "vlog":    VNEXTBackend.vnextlog,
-        "vfit":    VNEXTBackend.vnextfit,
-        "vprm":    VNEXTBackend.vnextprm,
-        "cali":    VNEXTBackend.vnextcali,
-        "merge":   VNEXTBackend.vnextmerge,
-        "pixel":   VNEXTBackend.vnextpixel,
-        "pole":    VNEXTBackend.vnextpole,
-        "vsum":    VNEXTBackend.vnextsum,
+        "chop": VNEXTBackend.vnextchop,
+        "vspf": VNEXTBackend.vnextspf,
+        "gsas": VNEXTBackend.vnextgsas,
+        "vlog": VNEXTBackend.vnextlog,
+        "vfit": VNEXTBackend.vnextfit,
+        "vprm": VNEXTBackend.vnextprm,
+        "cali": VNEXTBackend.vnextcali,
+        "merge": VNEXTBackend.vnextmerge,
+        "pixel": VNEXTBackend.vnextpixel,
+        "pole": VNEXTBackend.vnextpole,
+        "vsum": VNEXTBackend.vnextsum,
     }
 
     def __init__(self, shell, backend: VNEXTBackend) -> None:

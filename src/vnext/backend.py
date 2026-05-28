@@ -1,5 +1,6 @@
-import numpy as np
 from typing import Any
+
+import numpy as np
 
 
 def func(kwargs):
@@ -9,6 +10,7 @@ def func(kwargs):
     else:
         a = np.arange(int(kwargs["runs"]), int(kwargs["runs"]) + 1)
         return a
+
 
 class Backend:
     def vnextview(
@@ -24,9 +26,18 @@ class Backend:
         minv: float | None = None,
         maxv: float | None = None,
     ) -> dict[str, Any]:
-        return {"name": "vnextview", "ipts": ipts, "runs": runs, "rune": rune,
-                "chopruns": chopruns, "runv": runv, "norm": norm, "pc": pc,
-                "minv": minv, "maxv": maxv}
+        return {
+            "name": "vnextview",
+            "ipts": ipts,
+            "runs": runs,
+            "rune": rune,
+            "chopruns": chopruns,
+            "runv": runv,
+            "norm": norm,
+            "pc": pc,
+            "minv": minv,
+            "maxv": maxv,
+        }
 
     def vnextbin(
         self,
@@ -36,8 +47,7 @@ class Backend:
         rune: int | None = None,
         chopruns: int | None = None,
     ) -> dict[str, Any]:
-        return {"name": "vnextbin", "ipts": ipts, "runs": runs, "rune": rune,
-                "chopruns": chopruns}
+        return {"name": "vnextbin", "ipts": ipts, "runs": runs, "rune": rune, "chopruns": chopruns}
 
     def vnextbin_n(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
         return {"name": "vnextbin_n", "ipts": ipts, **kwargs}
@@ -54,8 +64,7 @@ class Backend:
         minv: float | None = None,
         maxv: float | None = None,
     ) -> dict[str, Any]:
-        return {"name": "vnextchop", "ipts": ipts, "runs": runs, "dbin": dbin,
-                "minv": minv, "maxv": maxv}
+        return {"name": "vnextchop", "ipts": ipts, "runs": runs, "dbin": dbin, "minv": minv, "maxv": maxv}
 
     def vnextchop_en(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
         return {"name": "vnextchop_en", "ipts": ipts, **kwargs}
@@ -70,8 +79,7 @@ class Backend:
         minv: float | None = None,
         maxv: float | None = None,
     ) -> dict[str, Any]:
-        return {"name": "vnextchop_ens", "ipts": ipts, "runs": runs, "se": se,
-                "dse": dse, "minv": minv, "maxv": maxv}
+        return {"name": "vnextchop_ens", "ipts": ipts, "runs": runs, "se": se, "dse": dse, "minv": minv, "maxv": maxv}
 
     def vnextspf(
         self,
@@ -88,9 +96,20 @@ class Backend:
         autofix: int | None = None,
         npeaks: float | None = None,
     ) -> dict[str, Any]:
-        return {"name": "vnextspf", "ipts": ipts, "runs": runs, "rune": rune,
-                "chopruns": chopruns, "runv": runv, "runr": runr, "pc": pc,
-                "norm": norm, "updated": updated, "autofix": autofix, "npeaks": npeaks}
+        return {
+            "name": "vnextspf",
+            "ipts": ipts,
+            "runs": runs,
+            "rune": rune,
+            "chopruns": chopruns,
+            "runv": runv,
+            "runr": runr,
+            "pc": pc,
+            "norm": norm,
+            "updated": updated,
+            "autofix": autofix,
+            "npeaks": npeaks,
+        }
 
     def vnextgsas(
         self,
@@ -101,8 +120,7 @@ class Backend:
         choprun: int | None = None,
         runm: int | None = None,
     ) -> dict[str, Any]:
-        return {"name": "vnextgsas", "ipts": ipts, "runs": runs, "rune": rune,
-                "choprun": choprun, "runm": runm}
+        return {"name": "vnextgsas", "ipts": ipts, "runs": runs, "rune": rune, "choprun": choprun, "runm": runm}
 
     def vnextlog(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
         return {"name": "vnextlog", "ipts": ipts, **kwargs}
