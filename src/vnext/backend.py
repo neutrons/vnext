@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Any
 
 
 def func(kwargs):
@@ -9,107 +10,120 @@ def func(kwargs):
         a = np.arange(int(kwargs["runs"]), int(kwargs["runs"]) + 1)
         return a
 
+class Backend:
+    def vnextview(
+        self,
+        *,
+        ipts: int,
+        runs: int = 1,
+        rune: int | None = None,
+        chopruns: int | None = None,
+        runv: int | None = None,
+        norm: int | None = None,
+        pc: int | None = None,
+        minv: float | None = None,
+        maxv: float | None = None,
+    ) -> dict[str, Any]:
+        return {"name": "vnextview", "ipts": ipts, "runs": runs, "rune": rune,
+                "chopruns": chopruns, "runv": runv, "norm": norm, "pc": pc,
+                "minv": minv, "maxv": maxv}
 
-def vnextview(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextview: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
+    def vnextbin(
+        self,
+        *,
+        ipts: int,
+        runs: int = 1,
+        rune: int | None = None,
+        chopruns: int | None = None,
+    ) -> dict[str, Any]:
+        return {"name": "vnextbin", "ipts": ipts, "runs": runs, "rune": rune,
+                "chopruns": chopruns}
 
+    def vnextbin_n(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
+        return {"name": "vnextbin_n", "ipts": ipts, **kwargs}
 
-def vnextbin(**kwargs):
-    runarr = func(kwargs)
-    print(runarr)
-    for key, value in kwargs.items():
-        print(key, value)
-    # print(f"vnextbin: IPTS={IPTS}, kwargs={kwargs}")
-    return  # {"IPTS": IPTS, "kwargs": kwargs}
+    def vnextbin_ns(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
+        return {"name": "vnextbin_ns", "ipts": ipts, **kwargs}
 
+    def vnextchop(
+        self,
+        *,
+        ipts: int,
+        runs: int = 1,
+        dbin: float = 1,
+        minv: float | None = None,
+        maxv: float | None = None,
+    ) -> dict[str, Any]:
+        return {"name": "vnextchop", "ipts": ipts, "runs": runs, "dbin": dbin,
+                "minv": minv, "maxv": maxv}
 
-def vnextbin_n(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextbin_n: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
+    def vnextchop_en(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
+        return {"name": "vnextchop_en", "ipts": ipts, **kwargs}
 
+    def vnextchop_ens(
+        self,
+        *,
+        ipts: int,
+        runs: int = 1,
+        se: str = "Temperature",
+        dse: float = 1,
+        minv: float | None = None,
+        maxv: float | None = None,
+    ) -> dict[str, Any]:
+        return {"name": "vnextchop_ens", "ipts": ipts, "runs": runs, "se": se,
+                "dse": dse, "minv": minv, "maxv": maxv}
 
-def vnextbin_ns(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextbin_ns: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
+    def vnextspf(
+        self,
+        *,
+        ipts: int,
+        runs: int = 1,
+        rune: int | None = None,
+        chopruns: int | None = None,
+        runv: int | None = None,
+        runr: int | None = None,
+        pc: int | None = None,
+        norm: int | None = None,
+        updated: int | None = None,
+        autofix: int | None = None,
+        npeaks: float | None = None,
+    ) -> dict[str, Any]:
+        return {"name": "vnextspf", "ipts": ipts, "runs": runs, "rune": rune,
+                "chopruns": chopruns, "runv": runv, "runr": runr, "pc": pc,
+                "norm": norm, "updated": updated, "autofix": autofix, "npeaks": npeaks}
 
+    def vnextgsas(
+        self,
+        *,
+        ipts: int,
+        runs: int = 1,
+        rune: int | None = None,
+        choprun: int | None = None,
+        runm: int | None = None,
+    ) -> dict[str, Any]:
+        return {"name": "vnextgsas", "ipts": ipts, "runs": runs, "rune": rune,
+                "choprun": choprun, "runm": runm}
 
-def vnextchop(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextchop: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
+    def vnextlog(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
+        return {"name": "vnextlog", "ipts": ipts, **kwargs}
 
+    def vnextfit(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
+        return {"name": "vnextfit", "ipts": ipts, **kwargs}
 
-def vnextchop_en(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextchope_n: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
+    def vnextprm(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
+        return {"name": "vnextprm", "ipts": ipts, **kwargs}
 
+    def vnextcali(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
+        return {"name": "vnextcali", "ipts": ipts, **kwargs}
 
-def vnextchop_ens(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextchop_ens: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
+    def vnextmerge(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
+        return {"name": "vnextmerge", "ipts": ipts, **kwargs}
 
+    def vnextpixel(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
+        return {"name": "vnextpixel", "ipts": ipts, **kwargs}
 
-def vnextspf(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextspf: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
+    def vnextpole(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
+        return {"name": "vnextpole", "ipts": ipts, **kwargs}
 
-
-def vnextgsas(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextgsas: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
-
-
-def vnextlog(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextlog: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
-
-
-def vnextfit(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextfit: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
-
-
-def vnextprm(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextprm: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
-
-
-def vnextcali(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextcali: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
-
-
-def vnextmerge(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextmerge: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
-
-
-def vnextpixel(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextpixel: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
-
-
-def vnextpole(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextpole: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
-
-
-def vnextsum(ipts, **kwargs):
-    # Replace with real logic
-    print(f"vnextsum: IPTS={ipts}, kwargs={kwargs}")
-    return {"IPTS": ipts, "kwargs": kwargs}
+    def vnextsum(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
+        return {"name": "vnextsum", "ipts": ipts, **kwargs}
