@@ -53,3 +53,8 @@ repos:
         entry: bash -c "pixi lock --check"
         stages: [pre-push]
         language: system
+      - id: ty-check
+        name: ty-check
+        entry: pixi run ty check
+        language: system
+        types: [python]

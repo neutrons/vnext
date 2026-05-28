@@ -10,6 +10,6 @@ def test_config():
 
 
 def test_config_override():
-    config = Configuration(**{"Paths.calibration": "/tmp/calibration"})
+    config = Configuration(**{"Paths.calibration": Path("/tmp/calibration")})
 
     assert config.get_calibration_path() == Path("/tmp/calibration")
