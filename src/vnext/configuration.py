@@ -17,12 +17,12 @@ class Configuration(ConfigParser):
 
     _log = Logger("vnext.Configuration")
 
-    def __init__(self, filename: Path = CONFIG_PATH_USER, **kwargs):
+    def __init__(self, filename: Path | str = CONFIG_PATH_USER, **kwargs):
         """Initialization of configuration mechanism
         :param filename: path to the configuration file, defaults to CONFIG_PATH_USER
         :param kwargs: optional overrides for configuration values, in the form of section.key=value"""
         ConfigParser.__init__(self)
-        if filename.exists():
+        if Path(filename).exists():
             self._log.debug(f"Loading configuration from {filename}")
             self.read(filename)
         else:
