@@ -55,6 +55,6 @@ repos:
         language: system
       - id: ty-check
         name: ty-check
-        entry: pixi run ty check
+        entry: ty check
         language: system
         types: [python]
