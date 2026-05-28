@@ -98,11 +98,12 @@ class VNEXTMagics(Magics):
         if not tokens:
             raise UsageError(f"Missing operation name. Valid: {', '.join(self._map)}")
         name, *rest = tokens
-        if name not in self._map:
+        name_lower = name.lower()
+        if name_lower not in self._map:
             raise UsageError(f"Unknown operation '{name}'. Valid: {', '.join(self._map)}")
         kwargs = parse_kv_tokens(rest)
         _normalize_ipts(kwargs)
-        return getattr(self.backend, self._map[name].__name__)(**kwargs)
+        return getattr(self.backend, self._map[name_lower].__name__)(**kwargs)
 
 
 def load_ipython_extension(ip=None, *, backend: VNEXTBackend | None = None) -> None:

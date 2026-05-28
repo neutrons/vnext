@@ -43,6 +43,7 @@ def test_generic_dispatcher_unknown_operation(shell):
 def test_ipts_case_insensitive(shell):
     result = shell.run_line_magic("vbin", "IPTS=123 runs=456")
     assert result["ipts"] == 123
+    assert result["runs"] == 456
 
 
 def test_comma_separated_args(shell):
@@ -55,3 +56,4 @@ def test_trailing_comma_magic_name(shell):
     result = shell.run_line_magic("vbin,", "ipts=123 runs=456")
     assert result["name"] == "vnextbin"
     assert result["ipts"] == 123
+    assert result["runs"] == 456
