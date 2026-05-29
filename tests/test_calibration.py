@@ -1,6 +1,7 @@
 import datetime
 from pathlib import Path
 
+import numpy as np
 import pytest
 from numpy import testing as nptest
 
@@ -11,23 +12,29 @@ CALIB_DIR = Path(__file__).parent / "data"
 
 
 def test_focuspos():
-    # intentionally pass all parameters with the wrong type for the values
-    fp = FocusPositions(l1=1.0, l2=[1, 2], polar=[3, 4], azimuthal=[5, 6])
-    assert fp
-    assert fp.l1 == 1.0
-    assert fp.l2 == [1.0, 2.0]
-    assert fp.polar == [3.0, 4.0]
-    assert fp.azimuthal == [5.0, 6.0]
-    assert fp.specnum == [1, 2]
+    # numbers to shorten the tests
+    l1 = 1.0
+    l2 = [1, 2]
+    polar = [3, 4]
+    azimuthal = [5, 6]
 
     # intentionally pass all parameters with the wrong type for the values
-    fp = FocusPositions(l1=1.0, l2=[1, 2], polar=[3, 4], azimuthal=[5, 6], specnum=[7.0, 8.0])
+    fp = FocusPositions(l1=l1, l2=l2, polar=polar, azimuthal=azimuthal)
     assert fp
-    assert fp.l1 == 1.0
-    assert fp.l2 == [1.0, 2.0]
-    assert fp.polar == [3.0, 4.0]
-    assert fp.azimuthal == [5.0, 6.0]
-    assert fp.specnum == [7, 8]
+    assert fp.l1 == l1
+    nptest.assert_equal(fp.l2, np.asarray(l2, dtype=float), strict=True)
+    nptest.assert_equal(fp.polar, np.asarray(polar, dtype=float), strict=True)
+    nptest.assert_equal(fp.azimuthal, np.asarray(azimuthal, dtype=float), strict=True)
+    nptest.assert_equal(fp.specnum, np.asarray([1, 2], dtype=int), strict=True)
+
+    # intentionally pass all parameters with the wrong type for the values
+    specnum = [7.0, 8.0]
+    fp = FocusPositions(l1=l1, l2=l2, polar=polar, azimuthal=azimuthal, specnum=specnum)
+    assert fp
+    nptest.assert_equal(fp.l2, np.asarray(l2, dtype=float), strict=True)
+    nptest.assert_equal(fp.polar, np.asarray(polar, dtype=float), strict=True)
+    nptest.assert_equal(fp.azimuthal, np.asarray(azimuthal, dtype=float), strict=True)
+    nptest.assert_equal(fp.specnum, np.asarray(specnum, dtype=int), strict=True)
 
 
 def test_focuspos_not_parallel():
