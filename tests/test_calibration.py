@@ -58,8 +58,16 @@ def test_get_focuspos_from_char_file_no_exist():
 def test_get_calibration_info_bad_date():
     with pytest.raises(ValueError):
         get_calibration_info(datetime.datetime(1999, 12, 31))
-    with pytest.raises(ValueError):
-        get_calibration_info(datetime.datetime(2100, 1, 2))
+
+
+def test_get_calibration_latest():
+    # get current instrument
+    calib, fp = get_calibration_info(datetime.datetime(2100, 1, 2))
+    assert calib.name == "B123456DIFCs-12Cross-3456789Cal.h5"
+    nptest.assert_allclose(fp.l1, 43.755)
+    nptest.assert_allclose(fp.l2, (2.296, 2.296, 2.07, 2.07, 2.07, 2.53, 2.07, 2.07, 2.53))
+    nptest.assert_allclose(fp.polar, (90, 90, 120, 150, 157, 65.5, 150, 157, 65.5))
+    nptest.assert_allclose(fp.azimuthal, (180, 0, 0, 0, 180, 180, 0, 0, 0))
 
 
 def test_get_calibration_info_3bank():

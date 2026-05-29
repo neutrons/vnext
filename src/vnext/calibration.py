@@ -18,7 +18,7 @@ class FocusPositions:
     specnum: list[int]
     l2: list[float]
     polar: list[float]
-    aziumuthal: list[float]
+    azimuthal: list[float]
 
     def __init__(
         self,
@@ -55,7 +55,7 @@ def _get_focuspositions_from_char_file(filepath: FilePath) -> FocusPositions:
     from mantid.simpleapi import PDLoadCharacterizations, mtd
 
     # use mantid to parse the file
-    wkspname = "pdchar"
+    wkspname = mtd.unique_name(5, prefix="pdchar")
     (_, _, l1, specnum, l2, polar, azimuthal) = PDLoadCharacterizations(
         Filename=str(filepath), OutputWorkspace=wkspname
     )
@@ -66,16 +66,12 @@ def _get_focuspositions_from_char_file(filepath: FilePath) -> FocusPositions:
     return FocusPositions(l1=l1, specnum=specnum, l2=l2, polar=polar, azimuthal=azimuthal)
 
 
-# constant needed so we can use a bisect to find the correct calibration
-DISTANT_FUTURE_DATE = datetime.datetime(2100, 1, 1)
-
 # files that have DIFC , grouping, and mask information for reduction keyed by the valid date
 CALIB_FILE_LIST = {
     datetime.datetime(2000, 1, 1): "vulcan_foc_all_2bank_11p.cal",
     datetime.datetime(2017, 7, 1): "VULCAN_calibrate_2019_06_27.h5",
     datetime.datetime(2022, 5, 13): "B123456DIFCs-12Cross-3456Cal_v4.h5",
     datetime.datetime(2026, 1, 1): "B123456DIFCs-12Cross-3456789Cal.h5",
-    DISTANT_FUTURE_DATE: None,
 }
 
 # files that have the focus positions and bin edges for reduction keyed by the valid date
@@ -105,7 +101,6 @@ FOCUS_POS_LIST = {
         polar=[90, 90, 120, 150, 157, 65.5, 150, 157, 65.5],
         azimuthal=[180, 0, 0, 0, 180, 180, 0, 0, 0],
     ),
-    DISTANT_FUTURE_DATE: None,
 }
 
 """
@@ -143,8 +138,6 @@ def get_calibration_info(
         raise ValueError("File date is out of range for calibration files")
     date = valid_dates[char_index]
     _log.debug(f"Calibration information for date {date_aquired} is valid from {date}")
-    if date >= DISTANT_FUTURE_DATE:
-        raise ValueError("File date is out of range for calibration files")
 
     # convert the calibration file into a Path
     calib_file = CALIB_FILE_LIST[date]
