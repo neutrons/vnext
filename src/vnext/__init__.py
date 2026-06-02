@@ -2,8 +2,12 @@
 
 from importlib import metadata
 
+from mantid.kernel import Property
+
 from .configuration import Configuration  # noqa: F401
-from .vnext_protocol import VNEXTBackend, unset_float  # noqa: F401
+from .vnext_protocol import VNEXTBackend  # noqa: F401
+
+UNSET_FLOAT: float = Property.EMPTY_DBL
 
 __version__ = metadata.version("vnext")
 del metadata

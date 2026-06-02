@@ -1,6 +1,6 @@
 from typing import Any
 
-from vnext import VNEXTBackend, unset_float
+from vnext import UNSET_FLOAT, VNEXTBackend
 
 
 class TestBackend(VNEXTBackend):
@@ -14,8 +14,8 @@ class TestBackend(VNEXTBackend):
         runv: int = -1,
         norm: int = -1,
         pc: int = -1,
-        minv: float = unset_float,
-        maxv: float = unset_float,
+        minv: float = UNSET_FLOAT,
+        maxv: float = UNSET_FLOAT,
     ) -> dict[str, Any]:
         return {
             "name": "vnextview",
@@ -52,8 +52,8 @@ class TestBackend(VNEXTBackend):
         ipts: int,
         runs: int = -1,
         dbin: float = 1,
-        minv: float = unset_float,
-        maxv: float = unset_float,
+        minv: float = UNSET_FLOAT,
+        maxv: float = UNSET_FLOAT,
     ) -> dict[str, Any]:
         return {"name": "vnextchop", "ipts": ipts, "runs": runs, "dbin": dbin, "minv": minv, "maxv": maxv}
 
@@ -67,8 +67,8 @@ class TestBackend(VNEXTBackend):
         runs: int = -1,
         se: str = "Temperature",
         dse: float = 1,
-        minv: float = unset_float,
-        maxv: float = unset_float,
+        minv: float = UNSET_FLOAT,
+        maxv: float = UNSET_FLOAT,
     ) -> dict[str, Any]:
         return {"name": "vnextchop_ens", "ipts": ipts, "runs": runs, "se": se, "dse": dse, "minv": minv, "maxv": maxv}
 
@@ -85,7 +85,7 @@ class TestBackend(VNEXTBackend):
         norm: int = -1,
         updated: int = -1,
         autofix: int = -1,
-        npeaks: float = unset_float,
+        npeaks: float = UNSET_FLOAT,
     ) -> dict[str, Any]:
         return {
             "name": "vnextspf",

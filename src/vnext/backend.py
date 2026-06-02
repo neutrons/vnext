@@ -1,6 +1,6 @@
 from typing import Any
 
-from vnext import VNEXTBackend, unset_float
+from vnext import UNSET_FLOAT, VNEXTBackend
 
 
 def func(kwargs):
@@ -27,8 +27,8 @@ class Backend(VNEXTBackend):
         runv: int = -1,
         norm: int = -1,
         pc: int = -1,
-        minv: float = unset_float,
-        maxv: float = unset_float,
+        minv: float = UNSET_FLOAT,
+        maxv: float = UNSET_FLOAT,
     ) -> dict[str, Any]:
         """View one GSAS gda data pattern after binning as histogram data:
         Parameters
@@ -80,8 +80,8 @@ class Backend(VNEXTBackend):
         ipts: int,
         runs: int = -1,
         dbin: float = 1,
-        minv: float = unset_float,
-        maxv: float = unset_float,
+        minv: float = UNSET_FLOAT,
+        maxv: float = UNSET_FLOAT,
     ) -> dict[str, Any]:
         """Chop wall clock time , synchronize, and bin continuously collected data in seconds
         Parameters
@@ -101,8 +101,8 @@ class Backend(VNEXTBackend):
         runs: int = -1,
         se: str = "Temperature",
         dse: float = 1,
-        minv: float = unset_float,
-        maxv: float = unset_float,
+        minv: float = UNSET_FLOAT,
+        maxv: float = UNSET_FLOAT,
     ) -> dict[str, Any]:
         """Chop sample environment , synchronize, and bin continuously collected data in seconds
         Parameters
@@ -126,7 +126,7 @@ class Backend(VNEXTBackend):
         norm: int = -1,
         updated: int = -1,
         autofix: int = -1,
-        npeaks: float = unset_float,
+        npeaks: float = UNSET_FLOAT,
     ) -> dict[str, Any]:
         """Conduct GSAS single peak fit:
         Parameters
