@@ -2,7 +2,7 @@
 
 from importlib import metadata
 
-from mantid.kernel import Property
+from mantid.kernel import Property  # ty: ignore[unresolved-import]
 
 UNSET_FLOAT: float = Property.EMPTY_DBL
 del Property
