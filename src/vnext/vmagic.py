@@ -1,14 +1,12 @@
 import shlex
-from typing import Dict, List
+from typing import Any, Callable, ClassVar
 
 from IPython import get_ipython
 from IPython.core.error import UsageError
+from IPython.core.magic import Magics, magics_class
 
-import vnext.backend as backend
-from vnext.vutils import VNEXTOperations, parse_kv_tokens, to_int_if_possible
-
-# 2) Create the adapter (ipts optional per your vutils.py)
-ops = VNEXTOperations(backend)
+from vnext.vnext_protocol import VNEXTBackend
+from vnext.vutils import parse_kv_tokens, to_int_if_possible
 
 
 def _normalize_commas(line: str) -> str:
@@ -28,96 +26,110 @@ def _normalize_commas(line: str) -> str:
                 q = ch
             out.append(ch)
             continue
-        if not in_quote and ch == ",":
-            out.append(" ")
-        else:
-            out.append(ch)
+        out.append(" " if (not in_quote and ch == ",") else ch)
     return "".join(out)
 
 
-def _split_tokens(line: str) -> List[str]:
+def _split_tokens(line: str) -> list[str]:
     """
     Split by whitespace while preserving quotes; then strip stray/trailing commas.
     """
-    normalized = _normalize_commas(line.strip())
-    parts = shlex.split(normalized)
-    parts = [p.rstrip(",") for p in parts if p and p != ","]
-    return parts
+    parts = shlex.split(_normalize_commas(line.strip()))
+    return [p.rstrip(",") for p in parts if p and p != ","]
 
 
-def _normalize_ipts(kwargs: Dict) -> Dict:
+def _normalize_ipts(kwargs: dict[str, Any]) -> dict[str, Any]:
     """
     Make ipts key case-insensitive and coerce to int if possible.
     """
     for k in list(kwargs.keys()):
         if k.lower() == "ipts":
-            v = kwargs.pop(k)
-            kwargs["ipts"] = to_int_if_possible(str(v))
+            kwargs["ipts"] = to_int_if_possible(str(kwargs.pop(k)))
     return kwargs
 
 
-def _make_handler(method_name: str):
-    """
-    Factory producing a line-magic handler bound to a specific method.
-    """
+@magics_class
+class VNEXTMagics(Magics):
+    _map: ClassVar[dict[str, Callable[..., Any]]] = {
+        "view": VNEXTBackend.vnextview,
+        "vbin": VNEXTBackend.vnextbin,
+        "vbinen": VNEXTBackend.vnextbin_n,
+        "vbinens": VNEXTBackend.vnextbin_ns,
+        "chopen": VNEXTBackend.vnextchop_en,
+        "chopens": VNEXTBackend.vnextchop_ens,
+        "chop": VNEXTBackend.vnextchop,
+        "vspf": VNEXTBackend.vnextspf,
+        "gsas": VNEXTBackend.vnextgsas,
+        "vlog": VNEXTBackend.vnextlog,
+        "vfit": VNEXTBackend.vnextfit,
+        "vprm": VNEXTBackend.vnextprm,
+        "cali": VNEXTBackend.vnextcali,
+        "merge": VNEXTBackend.vnextmerge,
+        "pixel": VNEXTBackend.vnextpixel,
+        "pole": VNEXTBackend.vnextpole,
+        "vsum": VNEXTBackend.vnextsum,
+    }
 
-    def _handler(line: str):
+    def __init__(self, shell, backend: VNEXTBackend) -> None:
+        super().__init__(shell)
+        self.backend = backend
+
+    def _make_handler(self, proto_method: Callable[..., Any]) -> Callable[[str], Any]:
+        """
+        Factory producing a line-magic handler bound to a specific method.
+        """
+        backend_name = proto_method.__name__
+
+        def handler(line: str) -> Any:
+            kwargs = parse_kv_tokens(_split_tokens(line))
+            _normalize_ipts(kwargs)
+            return getattr(self.backend, backend_name)(**kwargs)
+
+        handler.__name__ = backend_name
+        handler.__doc__ = proto_method.__doc__
+        return handler
+
+    def _dispatch(self, line: str) -> Any:
+        """
+        Generic dispatcher: %V <operation> [key=value ...]
+        Example: %V VBin, Ipts=123, runs=45,rune=89
+        """
         tokens = _split_tokens(line)
-        kwargs = parse_kv_tokens(tokens)
-        kwargs = _normalize_ipts(kwargs)
-        try:
-            target = getattr(ops, method_name)
-        except AttributeError:
-            valid = ", ".join(ops.method_names())
-            raise UsageError(f"Unknown operation '{method_name}'. Valid methods: {valid}")
-        return target(**kwargs)
-
-    return _handler
-
-
-def _generic_dispatch(line: str):
-    """
-    Generic magic: first token is the method name (with or without trailing comma).
-    Example: %V VBin, Ipts=123, runs=45,rune=89
-    """
-    tokens = _split_tokens(line)
-    if not tokens:
-        valid = ", ".join(ops.method_names())
-        raise UsageError(f"Missing method name. Usage: %V <method> [args]. Valid methods: {valid}")
-    method = tokens[0]
-    rest = tokens[1:]
-    kwargs = parse_kv_tokens(rest)
-    kwargs = _normalize_ipts(kwargs)
-    try:
-        target = getattr(ops, method)
-    except AttributeError:
-        valid = ", ".join(ops.method_names())
-        raise UsageError(f"Unknown operation '{method}'. Valid methods: {valid}")
-    return target(**kwargs)
+        if not tokens:
+            raise UsageError(f"Missing operation name. Valid: {', '.join(self._map)}")
+        name, *rest = tokens
+        name_lower = name.lower()
+        if name_lower not in self._map:
+            raise UsageError(f"Unknown operation '{name}'. Valid: {', '.join(self._map)}")
+        kwargs = parse_kv_tokens(rest)
+        _normalize_ipts(kwargs)
+        return getattr(self.backend, self._map[name_lower].__name__)(**kwargs)
 
 
-def load_ipython_extension(ip=None):
-    ip = ip or get_ipython()
-    if ip is None:
-        raise RuntimeError("Not in IPython environment")
+def load_ipython_extension(ipython=None, *, backend: VNEXTBackend) -> None:
+    ipython = ipython or get_ipython()
+    if ipython is None:
+        raise RuntimeError("Not in an IPython environment")
+    if backend is None:
+        raise RuntimeError("A VNEXTBackend instance must be supplied via the backend= argument")
 
-    # Register a generic dispatcher for flexibility
-    ip.register_magic_function(_generic_dispatch, magic_kind="line", magic_name="V")
-    ip.register_magic_function(_generic_dispatch, magic_kind="line", magic_name="V,")
+    magics = VNEXTMagics(ipython, backend)
 
-    # Register specific magics for all known methods, plus aliases with trailing comma
-    for name in ops.method_names():
-        handler = _make_handler(name)
-        ip.register_magic_function(handler, magic_kind="line", magic_name=name)
-        ip.register_magic_function(handler, magic_kind="line", magic_name=f"{name},")
+    for name, proto_method in VNEXTMagics._map.items():
+        handler = magics._make_handler(proto_method)
+        ipython.register_magic_function(handler, magic_kind="line", magic_name=name)
+        ipython.register_magic_function(handler, magic_kind="line", magic_name=f"{name},")
         # Optional: lower-case aliases
-        ip.register_magic_function(handler, magic_kind="line", magic_name=name.lower())
-        ip.register_magic_function(handler, magic_kind="line", magic_name=f"{name.lower()},")
+        ipython.register_magic_function(handler, magic_kind="line", magic_name=name.lower())
+        ipython.register_magic_function(handler, magic_kind="line", magic_name=f"{name.lower()},")
+    # Register a generic dispatcher for flexibility
+    ipython.register_magic_function(magics._dispatch, magic_kind="line", magic_name="V")
+    ipython.register_magic_function(magics._dispatch, magic_kind="line", magic_name="V,")
     # Optional: enable automagic so magics can be used without %
-    ip.run_line_magic("automagic", "on")
+    ipython.run_line_magic("automagic", "on")
 
 
-def unload_ipython_extension(ip=None):
+def unload_ipython_extension(ip=None) -> None:
     # IPython does not provide a public API to unregister magics cleanly.
     # You can reload the kernel or avoid unloading.
     pass
