@@ -2,7 +2,6 @@
 
 from importlib import metadata
 
-from .backend import Backend  # noqa: F401
 from .configuration import Configuration  # noqa: F401
 from .vnext_protocol import VNEXTBackend, unset_float  # noqa: F401
 
