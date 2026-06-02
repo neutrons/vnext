@@ -15,7 +15,7 @@ class VPrompts(Prompts):
         return [(Token.OutPrompt, "")]
 
 
-def main(argv=None):  # noqa: ARG001
+def main(*argv, **kwargs):  # noqa: ARG001
     backend = Backend()
 
     config = Config()

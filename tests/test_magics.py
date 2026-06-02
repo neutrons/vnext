@@ -3,7 +3,7 @@ from IPython.core.error import UsageError
 from IPython.terminal.embed import InteractiveShellEmbed
 from traitlets.config import Config
 
-from vnext.backend import Backend
+from tests.util.testbackend import TestBackend
 from vnext.vmagic import VNEXTMagics, load_ipython_extension
 
 
@@ -12,7 +12,7 @@ def shell():
     config = Config()
     config.TerminalInteractiveShell.confirm_exit = False
     s = InteractiveShellEmbed(config=config, banner1="", exit_msg="")
-    load_ipython_extension(s, backend=Backend())
+    load_ipython_extension(s, backend=TestBackend())
     return s
 
 
@@ -44,6 +44,7 @@ def test_ipts_case_insensitive(shell):
     result = shell.run_line_magic("vbin", "IPTS=123 runs=456")
     assert result["ipts"] == 123
     assert result["runs"] == 456
+    assert "IPTS" not in result
 
 
 def test_comma_separated_args(shell):

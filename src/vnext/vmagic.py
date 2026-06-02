@@ -106,27 +106,27 @@ class VNEXTMagics(Magics):
         return getattr(self.backend, self._map[name_lower].__name__)(**kwargs)
 
 
-def load_ipython_extension(ip=None, *, backend: VNEXTBackend | None = None) -> None:
-    ip = ip or get_ipython()
-    if ip is None:
+def load_ipython_extension(ipython=None, *, backend: VNEXTBackend) -> None:
+    ipython = ipython or get_ipython()
+    if ipython is None:
         raise RuntimeError("Not in an IPython environment")
     if backend is None:
         raise RuntimeError("A VNEXTBackend instance must be supplied via the backend= argument")
 
-    magics = VNEXTMagics(ip, backend)
+    magics = VNEXTMagics(ipython, backend)
 
     for name, proto_method in VNEXTMagics._map.items():
         handler = magics._make_handler(proto_method)
-        ip.register_magic_function(handler, magic_kind="line", magic_name=name)
-        ip.register_magic_function(handler, magic_kind="line", magic_name=f"{name},")
+        ipython.register_magic_function(handler, magic_kind="line", magic_name=name)
+        ipython.register_magic_function(handler, magic_kind="line", magic_name=f"{name},")
         # Optional: lower-case aliases
-        ip.register_magic_function(handler, magic_kind="line", magic_name=name.lower())
-        ip.register_magic_function(handler, magic_kind="line", magic_name=f"{name.lower()},")
+        ipython.register_magic_function(handler, magic_kind="line", magic_name=name.lower())
+        ipython.register_magic_function(handler, magic_kind="line", magic_name=f"{name.lower()},")
     # Register a generic dispatcher for flexibility
-    ip.register_magic_function(magics._dispatch, magic_kind="line", magic_name="V")
-    ip.register_magic_function(magics._dispatch, magic_kind="line", magic_name="V,")
+    ipython.register_magic_function(magics._dispatch, magic_kind="line", magic_name="V")
+    ipython.register_magic_function(magics._dispatch, magic_kind="line", magic_name="V,")
     # Optional: enable automagic so magics can be used without %
-    ip.run_line_magic("automagic", "on")
+    ipython.run_line_magic("automagic", "on")
 
 
 def unload_ipython_extension(ip=None) -> None:

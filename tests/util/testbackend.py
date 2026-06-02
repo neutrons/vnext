@@ -3,20 +3,7 @@ from typing import Any
 from vnext import VNEXTBackend, unset_float
 
 
-def func(kwargs):
-    if "rune" in kwargs:
-        a = [int(kwargs["rune"])]
-        return a
-    else:
-        a = [int(kwargs["runs"])]
-        return a
-
-
-class Backend(VNEXTBackend):
-    """
-    The canonical VNEXT backend.
-    """
-
+class TestBackend(VNEXTBackend):
     def vnextview(
         self,
         *,
@@ -30,16 +17,6 @@ class Backend(VNEXTBackend):
         minv: float = unset_float,
         maxv: float = unset_float,
     ) -> dict[str, Any]:
-        """View one GSAS gda data pattern after binning as histogram data:
-        Parameters
-        - runs (int): Start run number
-        - rune (int): End run number
-        - chopruns (int): Chopruns where data are chopped from
-        - runv (int): Vanadium data for normalization
-        - norm (int): Normalize data over proton charge charge read from xml
-        - pc (int):  Normalize with proton charge
-        - minv (float | None): Cutoff of x axis
-        - maxv (float | None): Cutoff of x axis."""
         return {
             "name": "vnextview",
             "ipts": ipts,
@@ -61,11 +38,6 @@ class Backend(VNEXTBackend):
         rune: int = -1,
         chopruns: int = -1,
     ) -> dict[str, Any]:
-        """Bin event data to GSAS histogram files if not binned before:
-        Parameters
-        - runs (int): Start run number
-        - rune (int): End run number
-        - chopruns (int): Chopruns where data are chopped from"""
         return {"name": "vnextbin", "ipts": ipts, "runs": runs, "rune": rune, "chopruns": chopruns}
 
     def vnextbin_n(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
@@ -83,12 +55,6 @@ class Backend(VNEXTBackend):
         minv: float = unset_float,
         maxv: float = unset_float,
     ) -> dict[str, Any]:
-        """Chop wall clock time , synchronize, and bin continuously collected data in seconds
-        Parameters
-        - runs (int): Start run number
-        - dbin (float): time bin
-        - minv (float | None): minimum value
-        - maxv (float | None): maximum value"""
         return {"name": "vnextchop", "ipts": ipts, "runs": runs, "dbin": dbin, "minv": minv, "maxv": maxv}
 
     def vnextchop_en(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
@@ -104,13 +70,6 @@ class Backend(VNEXTBackend):
         minv: float = unset_float,
         maxv: float = unset_float,
     ) -> dict[str, Any]:
-        """Chop sample environment , synchronize, and bin continuously collected data in seconds
-        Parameters
-        - runs (int): Start run number
-        - se (str): name of sample environment to be chopped
-        - dse (float): sample environment bin
-        - minv (float | None): minimum value
-        - maxv (float | None): maximum value"""
         return {"name": "vnextchop_ens", "ipts": ipts, "runs": runs, "se": se, "dse": dse, "minv": minv, "maxv": maxv}
 
     def vnextspf(
@@ -128,18 +87,6 @@ class Backend(VNEXTBackend):
         autofix: int = -1,
         npeaks: float = unset_float,
     ) -> dict[str, Any]:
-        """Conduct GSAS single peak fit:
-        Parameters
-        - runs (int): Start run number
-        - rune (int): End run number
-        - chopruns (int): Chopruns where data are chopped from
-        - runv (int): Vanadium data for normalization
-        - norm (int): Normalize data over proton charge charge read from xml
-        - pc (int): Normalize with proton charge
-        - runr (int): reference run number to calculate strain, default is the first run
-        - updated (int): update peak positions
-        - autofix (int):
-        - npeaks (float | None): number of peaks to automatically generate."""
         return {
             "name": "vnextspf",
             "ipts": ipts,
@@ -164,12 +111,6 @@ class Backend(VNEXTBackend):
         choprun: int = -1,
         runm: int = -1,
     ) -> dict[str, Any]:
-        """Conduct GSAS Rietveld refinement:
-        Parameters
-        - runs (int): Start run number
-        - rune (int): End run number
-        - choprun (int): Chopruns where data are chopped from
-        - runm (int): Template run default is first one"""
         return {"name": "vnextgsas", "ipts": ipts, "runs": runs, "rune": rune, "choprun": choprun, "runm": runm}
 
     def vnextlog(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
