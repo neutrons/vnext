@@ -22,11 +22,11 @@ class FocusPositions:
 
     def __init__(
         self,
-        l1: float,
-        l2: list[float],
-        polar: list[float],
-        azimuthal: list[float],
-        specnum: Optional[list[int]] = None,
+        l1: float | int,
+        l2: list[float] | list[int],
+        polar: list[float] | list[int],
+        azimuthal: list[float] | list[int],
+        specnum: Optional[list[int] | list[float]] = None,
     ):
         """This will coerce all types and make sure all arrays are the same length"""
         self.l1 = float(l1)
@@ -119,7 +119,7 @@ modified to account for this.
 
 def get_calibration_info(
     date_aquired: datetime.datetime, config: Optional[Configuration] = None
-) -> tuple[Path, Optional[FocusPositions]]:
+) -> tuple[Path, FocusPositions]:
     """
     Get the correct calibration files for reduction based on the date of acquisition of the data. This will use the
     date of the NeXus file to determine which calibration files to use for reduction.
