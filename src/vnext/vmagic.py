@@ -1,5 +1,6 @@
 import shlex
-from typing import Any, Callable, ClassVar
+from types import FunctionType
+from typing import Any, ClassVar
 
 from IPython import get_ipython
 from IPython.core.error import UsageError
@@ -50,7 +51,7 @@ def _normalize_ipts(kwargs: dict[str, Any]) -> dict[str, Any]:
 
 @magics_class
 class VNEXTMagics(Magics):
-    _map: ClassVar[dict[str, Callable[..., Any]]] = {
+    _map: ClassVar[dict[str, FunctionType]] = {
         "view": VNEXTBackend.vnextview,
         "vbin": VNEXTBackend.vnextbin,
         "vbinen": VNEXTBackend.vnextbin_n,
@@ -74,7 +75,7 @@ class VNEXTMagics(Magics):
         super().__init__(shell)
         self.backend = backend
 
-    def _make_handler(self, proto_method: Callable[..., Any]) -> Callable[[str], Any]:
+    def _make_handler(self, proto_method: FunctionType) -> FunctionType:
         """
         Factory producing a line-magic handler bound to a specific method.
         """
