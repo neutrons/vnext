@@ -3,11 +3,12 @@ import datetime
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 from mantid.kernel import Logger
 
 from vnext import Configuration
+from vnext._typing import FilePath
 
 _log = Logger("vnext.calibration")
 
@@ -26,7 +27,7 @@ class FocusPositions:
         l2: list[float] | list[int],
         polar: list[float] | list[int],
         azimuthal: list[float] | list[int],
-        specnum: Optional[list[int] | list[float]] = None,
+        specnum: list[int] | list[float] | None = None,
     ):
         """This will coerce all types and make sure all arrays are the same length"""
         self.l1 = float(l1)
@@ -42,10 +43,6 @@ class FocusPositions:
             self.specnum = [int(item) for item in specnum]
         else:
             self.specnum = list(range(1, len(self.l2) + 1))
-
-
-# define a type for file paths that can be either a string or a Path object
-FilePath = Union[str, Path]
 
 
 def _get_focuspositions_from_char_file(filepath: FilePath) -> FocusPositions:
@@ -67,7 +64,7 @@ def _get_focuspositions_from_char_file(filepath: FilePath) -> FocusPositions:
 
 
 # files that have DIFC , grouping, and mask information for reduction keyed by the valid date
-CALIB_FILE_LIST: dict[datetime.datetime, str | Path] = {
+CALIB_FILE_LIST: dict[datetime.datetime, FilePath] = {
     datetime.datetime(2000, 1, 1): "vulcan_foc_all_2bank_11p.cal",
     datetime.datetime(2017, 7, 1): "VULCAN_calibrate_2019_06_27.h5",
     datetime.datetime(2022, 5, 13): "B123456DIFCs-12Cross-3456Cal_v4.h5",

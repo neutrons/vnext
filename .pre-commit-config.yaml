@@ -57,6 +57,8 @@ repos:
         entry: bash -c "pixi lock --check"
         stages: [pre-push]
         language: system
+      # ty looks for everything in the installed environment so doesn't
+      # work well in pre-commit.ci
       - id: ty-check
         name: ty-check
         entry: ty check
