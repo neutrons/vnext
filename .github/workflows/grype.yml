@@ -86,6 +86,6 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Run the Grype scan action
-        uses: neutrons/conda-actions/pkg-install@v2
+        uses: neutrons/conda-actions/grype@v2
         with:
           path: ${{ steps.installed.outputs.install_dir }}
