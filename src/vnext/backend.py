@@ -13,9 +13,7 @@ def func(kwargs):
 
 
 class Backend(VNEXTBackend):
-    """
-    The canonical VNEXT backend.
-    """
+    """The canonical VNEXT backend."""
 
     def vnextview(
         self,
@@ -32,14 +30,14 @@ class Backend(VNEXTBackend):
     ) -> dict[str, Any]:
         """View one GSAS gda data pattern after binning as histogram data:
         Parameters
-        - runs (int): Start run number
-        - rune (int): End run number
-        - chopruns (int): Chopruns where data are chopped from
-        - runv (int): Vanadium data for normalization
-        - norm (int): Normalize data over proton charge charge read from xml
-        - pc (int):  Normalize with proton charge
-        - minv (float | None): Cutoff of x axis
-        - maxv (float | None): Cutoff of x axis."""
+        - runs: Start run number
+        - rune: End run number
+        - chopruns: Chopruns where data are chopped from
+        - runv: Vanadium data for normalization
+        - norm: Normalize data over proton charge charge read from xml
+        - pc:  Normalize with proton charge
+        - minv: Cutoff of x axis
+        - maxv: Cutoff of x axis."""
         return {
             "name": "vnextview",
             "ipts": ipts,
@@ -63,9 +61,9 @@ class Backend(VNEXTBackend):
     ) -> dict[str, Any]:
         """Bin event data to GSAS histogram files if not binned before:
         Parameters
-        - runs (int): Start run number
-        - rune (int): End run number
-        - chopruns (int): Chopruns where data are chopped from"""
+        - runs: Start run number
+        - rune: End run number
+        - chopruns: Chopruns where data are chopped from"""
         return {"name": "vnextbin", "ipts": ipts, "runs": runs, "rune": rune, "chopruns": chopruns}
 
     def vnextbin_n(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
@@ -85,10 +83,10 @@ class Backend(VNEXTBackend):
     ) -> dict[str, Any]:
         """Chop wall clock time , synchronize, and bin continuously collected data in seconds
         Parameters
-        - runs (int): Start run number
-        - dbin (float): time bin
-        - minv (float | None): minimum value
-        - maxv (float | None): maximum value"""
+        - runs: Start run number
+        - dbin: time bin
+        - minv: minimum value
+        - maxv: maximum value"""
         return {"name": "vnextchop", "ipts": ipts, "runs": runs, "dbin": dbin, "minv": minv, "maxv": maxv}
 
     def vnextchop_en(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
@@ -106,11 +104,11 @@ class Backend(VNEXTBackend):
     ) -> dict[str, Any]:
         """Chop sample environment , synchronize, and bin continuously collected data in seconds
         Parameters
-        - runs (int): Start run number
-        - se (str): name of sample environment to be chopped
+        - runs: Start run number
+        - se: name of sample environment to be chopped
         - dse (float): sample environment bin
-        - minv (float | None): minimum value
-        - maxv (float | None): maximum value"""
+        - minv: minimum value
+        - maxv: maximum value"""
         return {"name": "vnextchop_ens", "ipts": ipts, "runs": runs, "se": se, "dse": dse, "minv": minv, "maxv": maxv}
 
     def vnextspf(
@@ -130,16 +128,16 @@ class Backend(VNEXTBackend):
     ) -> dict[str, Any]:
         """Conduct GSAS single peak fit:
         Parameters
-        - runs (int): Start run number
-        - rune (int): End run number
-        - chopruns (int): Chopruns where data are chopped from
-        - runv (int): Vanadium data for normalization
-        - norm (int): Normalize data over proton charge charge read from xml
-        - pc (int): Normalize with proton charge
-        - runr (int): reference run number to calculate strain, default is the first run
-        - updated (int): update peak positions
-        - autofix (int):
-        - npeaks (float | None): number of peaks to automatically generate."""
+        - runs: Start run number
+        - rune: End run number
+        - chopruns: Chopruns where data are chopped from
+        - runv: Vanadium data for normalization
+        - norm: Normalize data over proton charge charge read from xml
+        - pc: Normalize with proton charge
+        - runr: reference run number to calculate strain, default is the first run
+        - updated: update peak positions
+        - autofix:
+        - npeaks: number of peaks to automatically generate."""
         return {
             "name": "vnextspf",
             "ipts": ipts,
@@ -166,10 +164,10 @@ class Backend(VNEXTBackend):
     ) -> dict[str, Any]:
         """Conduct GSAS Rietveld refinement:
         Parameters
-        - runs (int): Start run number
-        - rune (int): End run number
-        - choprun (int): Chopruns where data are chopped from
-        - runm (int): Template run default is first one"""
+        - runs: Start run number
+        - rune: End run number
+        - choprun: Chopruns where data are chopped from
+        - runm: Template run default is first one"""
         return {"name": "vnextgsas", "ipts": ipts, "runs": runs, "rune": rune, "choprun": choprun, "runm": runm}
 
     def vnextlog(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:

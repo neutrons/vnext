@@ -65,8 +65,8 @@ html_theme = "sphinx_rtd_theme"  # use pixi add sphinx_rtd_theme if not installe
 autosummary_generate = True
 
 # Napoleon settings
-napoleon_google_docstring = False
-napoleon_numpy_docstring = True
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False
 
 # "Static" resources (like *.css *.js files, or images) to be included when generating the HTML documentation.
 if os.path.exists("_static"):
