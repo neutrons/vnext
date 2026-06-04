@@ -5,7 +5,7 @@
 name = "vnext"
 description = "Data reduction for VULCAN"
 version = "0.1.0.dev4"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = { text = "MIT" }
 keywords = ["neutrons", "python"]
 readme = "README.md"
@@ -117,6 +117,7 @@ hatch = "*"
 pip = ">=25.3"
 pre-commit = "*"
 pixi-pycharm = ">=0.0.10,<0.0.11"
+ty = ">=0.0.40"
 
 [tool.pixi.feature.docs.dependencies]
 sphinx = "*"
@@ -156,6 +157,9 @@ clean-all = { description = "Clean all artifacts", depends-on = [
   "clean-conda",
   "clean-docs",
   "clean-pypi",
+] }
+ty-check = { cmd = "ty check {{filename}}", description = "Run ty check", default-environment = "developer", args = [
+  { "arg" = "filename", "default" = "" },
 ] }
 
 ##############

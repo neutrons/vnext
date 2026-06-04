@@ -2,7 +2,7 @@
 
 from importlib import metadata
 
-from mantid.kernel import Property
+from mantid.kernel import Property  # ty: ignore[unresolved-import]
 
 UNSET_FLOAT: float = Property.EMPTY_DBL
 del Property
@@ -16,6 +16,6 @@ del metadata
 
 def VNext():  # noqa N802
     """This is needed for backward compatibility because mantid workbench does "from shiver import Shiver" """
-    from .vnext import VNext as vnext  # noqa N813
+    from vnext import VNext as vnext  # noqa N813
 
     return vnext()

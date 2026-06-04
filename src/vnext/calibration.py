@@ -3,11 +3,12 @@ import datetime
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 from mantid.kernel import Logger
 
 from vnext import Configuration
+from vnext._typing import FilePath
 
 _log = Logger("vnext.calibration")
 
@@ -22,11 +23,11 @@ class FocusPositions:
 
     def __init__(
         self,
-        l1: float,
-        l2: list[float],
-        polar: list[float],
-        azimuthal: list[float],
-        specnum: Optional[list[int]] = None,
+        l1: float | int,
+        l2: list[float] | list[int],
+        polar: list[float] | list[int],
+        azimuthal: list[float] | list[int],
+        specnum: list[int] | list[float] | None = None,
     ):
         """This will coerce all types and make sure all arrays are the same length"""
         self.l1 = float(l1)
@@ -44,15 +45,11 @@ class FocusPositions:
             self.specnum = list(range(1, len(self.l2) + 1))
 
 
-# define a type for file paths that can be either a string or a Path object
-FilePath = Union[str, Path]
-
-
 def _get_focuspositions_from_char_file(filepath: FilePath) -> FocusPositions:
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Characterization file does not exist: {filepath}")
 
-    from mantid.simpleapi import PDLoadCharacterizations, mtd
+    from mantid.simpleapi import PDLoadCharacterizations, mtd  # ty: ignore[unresolved-import]
 
     # use mantid to parse the file
     wkspname = mtd.unique_name(5, prefix="pdchar")
@@ -67,7 +64,7 @@ def _get_focuspositions_from_char_file(filepath: FilePath) -> FocusPositions:
 
 
 # files that have DIFC , grouping, and mask information for reduction keyed by the valid date
-CALIB_FILE_LIST = {
+CALIB_FILE_LIST: dict[datetime.datetime, FilePath] = {
     datetime.datetime(2000, 1, 1): "vulcan_foc_all_2bank_11p.cal",
     datetime.datetime(2017, 7, 1): "VULCAN_calibrate_2019_06_27.h5",
     datetime.datetime(2022, 5, 13): "B123456DIFCs-12Cross-3456Cal_v4.h5",
@@ -119,7 +116,7 @@ modified to account for this.
 
 def get_calibration_info(
     date_aquired: datetime.datetime, config: Optional[Configuration] = None
-) -> tuple[Path, Optional[FocusPositions]]:
+) -> tuple[Path, FocusPositions]:
     """
     Get the correct calibration files for reduction based on the date of acquisition of the data. This will use the
     date of the NeXus file to determine which calibration files to use for reduction.
@@ -144,7 +141,7 @@ def get_calibration_info(
     if type(calib_file) is not Path:
         if config is None:  # lazy creation
             config = Configuration()
-        calib_path = config.get_calibration_path()
+        calib_path = Path(config.get_calibration_path())
         calib_file = calib_path / calib_file
         # write the result back into the dict so we don't have to do it again
         CALIB_FILE_LIST[date] = calib_file
@@ -154,8 +151,8 @@ def get_calibration_info(
         # create the path to a file to read
         if config is None:  # lazy creation
             config = Configuration()
-        calib_path = config.get_calibration_path()
-        focus_pos = calib_path / focus_pos
+        calib_path = Path(config.get_calibration_path())
+        focus_pos = calib_path / str(focus_pos)  # force type
         focus_pos = _get_focuspositions_from_char_file(focus_pos)  # changing type
         # write the result back into the dict so we don't have to do it again
         FOCUS_POS_LIST[date] = focus_pos

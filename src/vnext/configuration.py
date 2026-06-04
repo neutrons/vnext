@@ -8,6 +8,8 @@ from pathlib import Path
 
 from mantid.kernel import Logger
 
+from vnext._typing import FilePath
+
 # configuration settings file path - this is where linux puts things by default
 CONFIG_PATH_USER: Path = Path.home() / ".config" / "vnext" / "configuration.ini"
 
@@ -17,12 +19,12 @@ class Configuration(ConfigParser):
 
     _log = Logger("vnext.Configuration")
 
-    def __init__(self, filename: Path = CONFIG_PATH_USER, **kwargs):
+    def __init__(self, filename: FilePath = CONFIG_PATH_USER, **kwargs):
         """Initialization of configuration mechanism
         :param filename: path to the configuration file, defaults to CONFIG_PATH_USER
         :param kwargs: optional overrides for configuration values, in the form of section.key=value"""
         ConfigParser.__init__(self)
-        if filename.exists():
+        if Path(filename).exists():
             self._log.debug(f"Loading configuration from {filename}")
             self.read(filename)
         else:
