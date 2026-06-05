@@ -3,7 +3,6 @@ import datetime
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from mantid.kernel import Logger
 
@@ -115,11 +114,26 @@ modified to account for this.
 
 
 def get_calibration_info(
-    date_aquired: datetime.datetime, config: Optional[Configuration] = None
+    date_aquired: datetime.datetime, config: Configuration | None = None
 ) -> tuple[Path, FocusPositions]:
     """
     Get the correct calibration files for reduction based on the date of acquisition of the data. This will use the
     date of the NeXus file to determine which calibration files to use for reduction.
+
+    Usage example
+
+    Parameters:
+    - date_aquired: Date data was measured to find correct calibration information
+    - config: Alternate configuration. Used in testing
+
+    .. code-block::
+
+       import vnext
+       from pathlib import Path
+       from datetime.datetime import fromtimestamp
+       filepath = Path("/SNS/VULCAN/IPTS-37627/nexus/VULCAN_269462.nxs.h5")
+       timestamp = fromtimestamp(filepath.stat().st_ctime) # creation time
+       cal_file, focus_pos = vnext.calibration.get_calibration_info(timestamp)
 
     The calibration file will be returned as a Path object, and the focus positions will be returned as a
     FocusPositions object. The focus positions may be None if there are no focus positions for the given date. The
