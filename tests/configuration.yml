@@ -1,0 +1,6 @@
+# Test configuration — overrides only what differs from the bundled defaults.
+# ${project.root} is injected at runtime as the repository root.
+instrument:
+  home: ${project.root}/tests/data/vulcan
+  calibration:
+    home: ${project.root}/tests/data
