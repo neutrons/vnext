@@ -2,12 +2,18 @@
 
 from importlib import metadata
 
+import neutrons_standard
 from mantid.kernel import Property  # ty: ignore[unresolved-import]
 
 UNSET_FLOAT: float = Property.EMPTY_DBL
 del Property
 
-from .configuration import Configuration  # noqa: E402, F401
+# Register this package with neutrons_standard before importing Config.  Config is a
+# singleton that loads vnext/resources/application.yml on first import, and it needs to
+# know the client package name to locate those resources.
+neutrons_standard.init("vnext")
+from neutrons_standard.config import Config  # noqa: E402, F401
+
 from .vnext_protocol import VNEXTBackend  # noqa: E402, F401
 
 __version__ = metadata.version("vnext")

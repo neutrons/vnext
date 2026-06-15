@@ -6,7 +6,7 @@ from pathlib import Path
 
 from mantid.kernel import Logger
 
-from vnext import Configuration
+from vnext import Config
 from vnext._typing import FilePath
 
 _log = Logger("vnext.calibration")
@@ -113,9 +113,7 @@ modified to account for this.
 """
 
 
-def get_calibration_info(
-    date_aquired: datetime.datetime, config: Configuration | None = None
-) -> tuple[Path, FocusPositions]:
+def get_calibration_info(date_aquired: datetime.datetime, config=None) -> tuple[Path, FocusPositions]:
     """
     Get the correct calibration files for reduction based on the date of acquisition of the data. This will use the
     date of the NeXus file to determine which calibration files to use for reduction.
@@ -124,7 +122,8 @@ def get_calibration_info(
 
     Parameters:
     - date_aquired: Date data was measured to find correct calibration information
-    - config: Alternate configuration. Used in testing
+    - config: Alternate configuration providing ``instrument.calibration.home``. Defaults to the
+      shared ``neutrons_standard`` ``Config`` singleton. Mainly used in testing.
 
     .. code-block::
 
@@ -153,9 +152,9 @@ def get_calibration_info(
     # convert the calibration file into a Path
     calib_file = CALIB_FILE_LIST[date]
     if type(calib_file) is not Path:
-        if config is None:  # lazy creation
-            config = Configuration()
-        calib_path = Path(config.get_calibration_path())
+        if config is None:  # lazy lookup of the shared singleton
+            config = Config
+        calib_path = Path(config["instrument.calibration.home"]).expanduser()
         calib_file = calib_path / calib_file
         # write the result back into the dict so we don't have to do it again
         CALIB_FILE_LIST[date] = calib_file
@@ -163,9 +162,9 @@ def get_calibration_info(
     focus_pos = FOCUS_POS_LIST[date]
     if type(focus_pos) is not FocusPositions:
         # create the path to a file to read
-        if config is None:  # lazy creation
-            config = Configuration()
-        calib_path = Path(config.get_calibration_path())
+        if config is None:  # lazy lookup of the shared singleton
+            config = Config
+        calib_path = Path(config["instrument.calibration.home"]).expanduser()
         focus_pos = calib_path / str(focus_pos)  # force type
         focus_pos = _get_focuspositions_from_char_file(focus_pos)  # changing type
         # write the result back into the dict so we don't have to do it again

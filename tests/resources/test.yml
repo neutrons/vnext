@@ -1,0 +1,7 @@
+# Test environment overrides, loaded on top of application.yml when env=test.
+# neutrons_standard injects ${module.root}, which resolves to the tests/ directory
+# in the test environment, so these paths point at the checked-in test fixtures.
+instrument:
+  home: ${module.root}/data/vulcan
+  calibration:
+    home: ${module.root}/data

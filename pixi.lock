@@ -8,6 +8,7 @@ environments:
     - url: https://prefix.dev/pixi-build-backends/
     - url: https://conda.anaconda.org/mantid-ornl/label/rc/
     - url: https://conda.anaconda.org/mantid/
+    - url: https://conda.anaconda.org/neutrons/
     indexes:
     - https://pypi.org/simple
     packages:
@@ -148,6 +149,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/rapidjson-1.1.0.post20240409-h3f2d84a_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/readline-8.3-h853b02a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/rpds-py-2026.5.1-py312h192e038_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/ruamel.yaml.clib-0.2.15-py312h5253ce2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/scipy-1.16.3-py312h54fa4ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/secretstorage-3.4.1-py312h7900ff3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/spglib-2.7.0-py312h6eeef32_1.conda
@@ -320,6 +322,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/rich-14.3.4-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/roman-numerals-4.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/roman-numerals-py-4.1.0-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/ruamel.yaml-0.19.1-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/seekpath-2.2.1-pyhcf101f3_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/semver-3.0.4-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/setuptools-82.0.1-pyh332efcf_0.conda
@@ -361,6 +364,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/mantid-ornl/label/rc/linux-64/mantid-6.15.0.4rc1-np21py312h68643e6_0.conda
       - conda: https://conda.anaconda.org/mantid/noarch/mantidprofiler-1.4-py.conda
+      - conda: https://conda.anaconda.org/neutrons/noarch/neutrons_standard-0.1.0-pyh4616a5c_0.conda
       - pypi: .
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
@@ -2534,6 +2538,19 @@ packages:
   run_exports: {}
   size: 312248
   timestamp: 1779976992617
+- conda: https://conda.anaconda.org/conda-forge/linux-64/ruamel.yaml.clib-0.2.15-py312h5253ce2_1.conda
+  sha256: dc520329bdfd356e2f464393f8ad9b8450fd5a269699907b2b8d629300c2c068
+  md5: 84aa470567e2211a2f8e5c8491cdd78c
+  depends:
+  - python
+  - __glibc >=2.17,<3.0.a0
+  - libgcc >=14
+  - python_abi 3.12.* *_cp312
+  license: MIT
+  license_family: MIT
+  run_exports: {}
+  size: 148221
+  timestamp: 1766159515069
 - conda: https://conda.anaconda.org/conda-forge/linux-64/scipy-1.16.3-py312h54fa4ab_2.conda
   sha256: 2f73242ca3164b4f305becb535a8245ff25839a42d4e62b222f866a5bf58b989
   md5: e82683871cbc4bb257b7694f31a91327
@@ -4724,6 +4741,18 @@ packages:
   run_exports: {}
   size: 11074
   timestamp: 1766025162370
+- conda: https://conda.anaconda.org/conda-forge/noarch/ruamel.yaml-0.19.1-pyhcf101f3_0.conda
+  sha256: b48bebe297a63ae60f52e50be328262e880702db4d9b4e86731473ada459c2a1
+  md5: 06ad944772941d5dae1e0d09848d8e49
+  depends:
+  - python >=3.10
+  - ruamel.yaml.clib >=0.2.15
+  - python
+  license: MIT
+  license_family: MIT
+  run_exports: {}
+  size: 98448
+  timestamp: 1767538149184
 - conda: https://conda.anaconda.org/conda-forge/noarch/seekpath-2.2.1-pyhcf101f3_2.conda
   sha256: 0c31fc514e782eb67fa9e7100389466994773ac0431d35e86c5629151abf9500
   md5: 910e60de5711de260de6b00a3b4e6be5
@@ -5243,6 +5272,17 @@ packages:
   license: GPL-3.0-or-later
   size: 42944
   timestamp: 1769622592524
+- conda: https://conda.anaconda.org/neutrons/noarch/neutrons_standard-0.1.0-pyh4616a5c_0.conda
+  sha256: 6c5e79f414ecec0da2d3d5ff5f770f61cce38b1abc57565cf3c99ba8d8f3dfa9
+  md5: b793e56fd15b67cb438e371bae8ef373
+  depends:
+  - python >=3.10
+  - python *
+  - numpy
+  - ruamel.yaml
+  license: MIT
+  size: 12817
+  timestamp: 1775759207724
 - pypi: .
   name: vnext
   requires_dist:

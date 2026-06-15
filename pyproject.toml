@@ -53,6 +53,7 @@ channels = [
   "https://prefix.dev/pixi-build-backends",
   "mantid-ornl/label/rc",                   # Required for pixi build
   "mantid",
+  "neutrons",                               # Provides neutrons_standard
 ]
 platforms = [
   "linux-64",
@@ -70,6 +71,7 @@ ipython = ">=9.9.0,<10"
 mantid = ">=6.15.0.4rc1,<6.16"
 mantidprofiler = ">=1.4,<2"
 matplotlib = "*"               # mantidqt and mantidworkbench both require matplotlib
+neutrons_standard = "*"        # shared Config/infrastructure from the neutrons channel
 
 [tool.pixi.pypi-dependencies]
 # PyPI dependencies, including this package to allow local editable installs
@@ -85,6 +87,7 @@ mantid = ">=6.15.0.4rc1,<6.16"
 mantidprofiler = ">=1.4,<2"
 matplotlib = "*"               # mantidqt and mantidworkbench both require matplotlib
 ipython = ">=9.9.0,<10"
+neutrons_standard = "*"        # shared Config/infrastructure from the neutrons channel
 
 [tool.pixi.package]
 name = "vnext"
@@ -202,3 +205,6 @@ known-first-party = ["vnext"]
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
+
+[tool.ty.environment]
+python = ".pixi/envs/default"

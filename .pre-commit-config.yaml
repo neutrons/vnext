@@ -61,6 +61,6 @@ repos:
       # work well in pre-commit.ci
       - id: ty-check
         name: ty-check
-        entry: ty check
+        entry: pixi run ty check
         language: system
         types: [python]

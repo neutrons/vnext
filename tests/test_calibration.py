@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 from numpy import testing as nptest
 
-from vnext import Configuration
 from vnext.calibration import FocusPositions, _get_focuspositions_from_char_file, get_calibration_info
 
 CALIB_DIR = Path(__file__).parent / "data"
@@ -78,14 +77,12 @@ def test_get_calibration_latest():
 
 
 def test_get_calibration_info_3bank():
-    config = Configuration(**{"Paths.calibration": str(CALIB_DIR)})
-    path, focus_pos = get_calibration_info(datetime.datetime(2020, 1, 1), config=config)
+    path, focus_pos = get_calibration_info(datetime.datetime(2020, 1, 1))
     assert path.name == "VULCAN_calibrate_2019_06_27.h5"
     assert focus_pos.l1 == 43.755
 
 
 def test_get_calibration_info_6bank():
-    config = Configuration(**{"Paths.calibration": str(CALIB_DIR)})
-    path, focus_pos = get_calibration_info(datetime.datetime(2026, 2, 14), config=config)
+    path, focus_pos = get_calibration_info(datetime.datetime(2026, 2, 14))
     assert path.name == "B123456DIFCs-12Cross-3456789Cal.h5"
     assert focus_pos.l1 == 43.755
