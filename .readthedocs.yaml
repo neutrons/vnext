@@ -18,11 +18,7 @@ build:
       # Use pixi with full path to install dependencies
       - $HOME/.pixi/bin/pixi --version
       - $HOME/.pixi/bin/pixi install --frozen
-      # Install the package in editable mode using pixi
-      #- $HOME/.pixi/bin/pixi run pip install -e .
-      # Install docs dependencies in the RTD Python environment too
-      #- pip install "sphinx<9" erdantic versioningit sphinx_rtd_theme sphinxcontrib-mermaid
-      # types-pyyaml h5py numpy matplotlib ruamel.yaml==0.18.16
+      - $HOME/.pixi/bin/pixi shell
 
 sphinx:
   builder: html
