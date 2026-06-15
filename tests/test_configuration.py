@@ -2,88 +2,53 @@ from pathlib import Path
 
 import pytest
 
-from vnext import Configuration
+from vnext import Config
 
 TESTS_DIR = Path(__file__).parent
 
 
 def test_config_defaults():
-    # With VNEXT_CONFIG set by conftest, calibration home is redirected to tests/data
-    config = Configuration()
-    assert config.get_calibration_path() == TESTS_DIR / "data"
+    # In the test environment ${module.root} resolves to the tests/ directory, so
+    # calibration home is redirected to tests/data by tests/resources/test.yml.
+    assert Path(Config["instrument.calibration.home"]) == TESTS_DIR / "data"
 
 
 def test_config_substitution():
     # ${IPTS.root} and ${facility.root} should resolve to the same value
-    config = Configuration()
-    assert config["IPTS.root"] == config["facility.root"]
+    assert Config["IPTS.root"] == Config["facility.root"]
 
 
 def test_config_instrument_home():
     # In the test environment, instrument.home is overridden to tests/data/vulcan
-    config = Configuration()
-    assert "vulcan" in config["instrument.home"].lower()
+    assert "vulcan" in Config["instrument.home"].lower()
 
 
 def test_config_nexus_keys():
-    config = Configuration()
-    assert config["instrument.nexus.native.extension"] == ".nxs.h5"
-    assert "VULCAN_" in config["instrument.nexus.native.prefix"]
+    assert Config["instrument.nexus.native.extension"] == ".nxs.h5"
+    assert "VULCAN_" in Config["instrument.nexus.native.prefix"]
 
 
 def test_config_pvlogs():
-    config = Configuration()
-    assert config["instrument.PVLogs.rootGroup"] == "/entry/DASlogs"
-    # wavelength is now a list of alternatives; first entry is the preferred name
-    wavelength_keys = config["instrument.PVLogs.choppers.skf34.wavelength"]
+    assert Config["instrument.PVLogs.rootGroup"] == "/entry/DASlogs"
+    # wavelength is a list of alternatives; first entry is the preferred name
+    wavelength_keys = Config["instrument.PVLogs.choppers.skf34.wavelength"]
     assert isinstance(wavelength_keys, list)
     assert wavelength_keys[0] == "BL7:Chop:Skf34:CenterWavelength"
     assert "skf34.lambda" in wavelength_keys
 
 
 def test_config_missing_key():
-    config = Configuration()
     with pytest.raises(KeyError):
-        _ = config["does.not.exist"]
+        _ = Config["does.not.exist"]
 
 
-def test_config_get_default():
-    config = Configuration()
-    assert config.get("does.not.exist", "fallback") == "fallback"
-
-
-def test_config_singleton():
-    assert Configuration() is Configuration()
-
-
-def test_config_explicit_override(tmp_path):
-    override = tmp_path / "override.yml"
-    override.write_text("instrument:\n  calibration:\n    home: /custom/path\n")
-    config = Configuration(config_path=override)
-    try:
-        assert config.get_calibration_path().as_posix() == "/custom/path"
-        # Rebuilding without a path returns the same (now-updated) singleton
-        assert Configuration() is config
-    finally:
-        # Restore for subsequent tests
-        Configuration.reset()
-
-
-def test_config_project_root_injected():
-    config = Configuration()
-    root = Path(config["project.root"])
+def test_config_module_root_injected():
+    # neutrons_standard injects module.root; in the test environment it is tests/.
+    root = Path(Config["module.root"])
     assert root.exists()
-    assert (root / "src" / "vnext").exists()
+    assert root.name == "tests"
 
 
-def test_config_circular_reference(tmp_path):
-    # A config with a -> b -> a must raise when the cycle is resolved.
-    circular_file = tmp_path / "circular.yml"
-    circular_file.write_text("a: ${b}\nb: ${a}\n")
-    config = Configuration(config_path=circular_file)
-    try:
-        with pytest.raises(ValueError, match="Circular configuration reference detected: a -> b -> a"):
-            config._resolve("${a}")
-    finally:
-        # Restore the singleton so later tests get the conftest config.
-        Configuration.reset()
+def test_config_override(config_override):
+    config_override("instrument.calibration.home", "/custom/path")
+    assert Config["instrument.calibration.home"] == "/custom/path"
