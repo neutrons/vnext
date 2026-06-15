@@ -74,3 +74,16 @@ def test_config_project_root_injected():
     root = Path(config["project.root"])
     assert root.exists()
     assert (root / "src" / "vnext").exists()
+
+
+def test_config_circular_reference(tmp_path):
+    # A config with a -> b -> a must raise when the cycle is resolved.
+    circular_file = tmp_path / "circular.yml"
+    circular_file.write_text("a: ${b}\nb: ${a}\n")
+    config = Configuration(config_path=circular_file)
+    try:
+        with pytest.raises(ValueError, match="Circular configuration reference detected: a -> b -> a"):
+            config._resolve("${a}")
+    finally:
+        # Restore the singleton so later tests get the conftest config.
+        Configuration.reset()
