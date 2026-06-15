@@ -27,8 +27,8 @@ def test_config_instrument_home():
 
 def test_config_nexus_keys():
     config = Configuration()
-    assert config["nexus.native.extension"] == ".nxs.h5"
-    assert "VULCAN_" in config["nexus.native.prefix"]
+    assert config["instrument.nexus.native.extension"] == ".nxs.h5"
+    assert "VULCAN_" in config["instrument.nexus.native.prefix"]
 
 
 def test_config_pvlogs():
@@ -60,11 +60,13 @@ def test_config_explicit_override(tmp_path):
     override = tmp_path / "override.yml"
     override.write_text("instrument:\n  calibration:\n    home: /custom/path\n")
     config = Configuration(config_path=override)
-    assert config.get_calibration_path().as_posix() == "/custom/path"
-    # Rebuilding without a path returns the same (now-updated) singleton
-    assert Configuration() is config
-    # Restore for subsequent tests
-    Configuration.reset()
+    try:
+        assert config.get_calibration_path().as_posix() == "/custom/path"
+        # Rebuilding without a path returns the same (now-updated) singleton
+        assert Configuration() is config
+    finally:
+        # Restore for subsequent tests
+        Configuration.reset()
 
 
 def test_config_project_root_injected():

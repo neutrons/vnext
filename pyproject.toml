@@ -201,3 +201,6 @@ known-first-party = ["vnext"]
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
+
+[tool.ty.environment]
+python = ".pixi/envs/default"

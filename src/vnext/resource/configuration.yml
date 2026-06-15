@@ -47,8 +47,3 @@ instrument:
           - BL7:Chop:Skf12:SpeedReq            # current
           - frequency                           # pre-upgrade alias
         bandwidth: BL7:Chop:Skf12:Bandwidth
-
-nexus:
-  native:
-    prefix: nexus/VULCAN_
-    extension: .nxs.h5

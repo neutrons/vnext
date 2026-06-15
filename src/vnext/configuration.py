@@ -98,7 +98,7 @@ class Configuration:
         env_path = os.environ.get("VNEXT_CONFIG")
         for path in filter(None, [env_path, config_path]):
             override = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
-            if override:
+            if isinstance(override, dict):
                 _deep_merge(self._data, override)
 
     def _find(self, key: str) -> Any:
@@ -110,16 +110,19 @@ class Configuration:
             node = node[part]
         return node
 
-    def _resolve(self, value: Any) -> Any:
+    def _resolve(self, value: Any, _chain: tuple[str, ...] = ()) -> Any:
         if not isinstance(value, str):
             return value
 
         def _replace(match: re.Match) -> str:
             ref = match.group(1)
+            if ref in _chain:
+                cycle = " -> ".join([*_chain, ref])
+                raise ValueError(f"Circular configuration reference detected: {cycle}")
             resolved = self._find(ref)
             if resolved is None:
                 return match.group(0)
-            return str(self._resolve(resolved))
+            return str(self._resolve(resolved, (*_chain, ref)))
 
         return _SUBST_RE.sub(_replace, value)
 
