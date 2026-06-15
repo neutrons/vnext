@@ -123,6 +123,7 @@ ty = ">=0.0.40"
 sphinx = "*"
 sphinx_rtd_theme = "*"
 myst-parser = "*"
+toml = "*"
 
 [tool.pixi.tasks]
 # Documentation
