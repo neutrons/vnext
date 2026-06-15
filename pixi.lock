@@ -5250,4 +5250,5 @@ packages:
   - sphinx ; extra == 'docs'
   - sphinx-rtd-theme ; extra == 'docs'
   - myst-parser ; extra == 'docs'
+  - toml ; extra == 'docs'
   requires_python: '>=3.12'

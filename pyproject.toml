@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-docs = ["sphinx", "sphinx_rtd_theme", "myst_parser"]
+docs = ["sphinx", "sphinx_rtd_theme", "myst_parser", "toml"]
 
 [project.scripts]
 vnext = "vnext.vconsole:main"
@@ -90,7 +90,7 @@ ipython = ">=9.9.0,<10"
 name = "vnext"
 
 [tool.pixi.package.build]
-backend = { name = "pixi-build-python", version = "*" }
+backend = { name = "pixi-build-python", version = "0.5.*" }
 
 # Environments and Features
 
