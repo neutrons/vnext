@@ -10,7 +10,6 @@ from vnext.calibration import (
     _bisect_era,
     _get_focuspositions_from_char_file,
     compute_tof_bins,
-    get_bin_edges,
     get_calibration_info,
 )
 
@@ -102,25 +101,6 @@ def test_bisect_era_unsorted_exact_key():
 
 def test_bisect_era_unsorted_between_keys():
     assert _bisect_era(_ERA_UNSORTED, datetime.datetime(2019, 3, 1)) == datetime.datetime(2017, 7, 1)
-
-
-def test_get_bin_edges_between_keys():
-    # 2020 falls between the 2017-07-01 and 2022-11-05 eras → 3bank file
-    path = get_bin_edges(datetime.datetime(2020, 1, 1))
-    assert path.name == "vdrive_3bank_bin.h5"
-    assert path.parent == CALIB_DIR / "2017_8_11_CAL"
-
-
-def test_get_bin_edges_exact_key():
-    # 2022-11-05 is itself a key → the 6bank file
-    path = get_bin_edges(datetime.datetime(2022, 11, 5))
-    assert path.name == "vdrive_6bank_bin.h5"
-    assert path.parent == CALIB_DIR / "Malcolm"
-
-
-def test_get_bin_edges_out_of_bounds():
-    with pytest.raises(ValueError):
-        get_bin_edges(datetime.datetime(1999, 1, 1))
 
 
 def test_get_calibration_info_bad_date():

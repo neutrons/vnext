@@ -9,8 +9,7 @@ from mantid.kernel import Logger
 
 from vnext import Config
 from vnext._typing import FilePath
-from vnext.dao import BinEdges, CalibrationFiles, FocusPositions, TofBins  # noqa: F401 — re-exported
-from vnext.dao.bin_edges import load_bin_edges as _load_bin_edges
+from vnext.dao import CalibrationFiles, FocusPositions, TofBins  # noqa: F401 — re-exported
 from vnext.dao.calibration_files import load_calibration_files as _load_calibration_files
 from vnext.dao.focus_positions import load_focus_positions as _load_focus_positions
 
@@ -18,7 +17,6 @@ _log = Logger("vnext.calibration")
 
 CALIB_FILES: dict[datetime.datetime, CalibrationFiles] = _load_calibration_files()
 FOCUS_POS_LIST: dict[datetime.datetime, FocusPositions | str] = _load_focus_positions()
-BIN_EDGES: dict[datetime.datetime, BinEdges] = _load_bin_edges()
 
 
 def _get_focuspositions_from_char_file(filepath: FilePath) -> FocusPositions:
@@ -95,19 +93,6 @@ def get_calibration_info(date_aquired: datetime.datetime, config=None) -> tuple[
         )
 
     return cal_file, focus_pos
-
-
-def get_bin_edges(date_aquired: datetime.datetime, config=None) -> Path:
-    """Return the TOF bin-edge file path for the given acquisition date.
-
-    The bin-edge era boundaries are independent of the calibration file eras.
-    The returned Path is not checked for existence.
-    """
-    if config is None:
-        config = Config
-    era = _bisect_era(BIN_EDGES, date_aquired)
-    _log.debug(f"Using bin-edge era {era} for acquisition date {date_aquired}")
-    return _calibration_home(config) / BIN_EDGES[era].bin_edges_file
 
 
 def compute_tof_bins(
