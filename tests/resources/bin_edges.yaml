@@ -1,0 +1,15 @@
+# TOF bin-edge files for VULCAN, one entry per era.
+# These are independent of the calibration file eras — do not merge.
+#
+# valid_from:      ISO date (YYYY-MM-DD) when this configuration became active.
+# bin_edges_file:  HDF5 or .dat file containing the exact TOF bin edges used by
+#                  VDRIVE for histogram output matching.
+
+- valid_from: "2000-01-01"
+  bin_edges_file: "2011_1_7/vdrive_log_bin.dat"
+
+- valid_from: "2017-07-01"
+  bin_edges_file: "2017_8_11_CAL/vdrive_3bank_bin.h5"
+
+- valid_from: "2022-11-05"
+  bin_edges_file: "Malcolm/vdrive_6bank_bin.h5"

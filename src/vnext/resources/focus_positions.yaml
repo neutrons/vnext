@@ -1,0 +1,38 @@
+# Focus positions for VULCAN, one entry per instrument era.
+#
+# valid_from: ISO date (YYYY-MM-DD) when this configuration became active.
+# char_file:  If present, focus positions are loaded at runtime via
+#             PDLoadCharacterizations rather than read from inline values.
+# source:     Documentation only — which characterisation file the inline
+#             values were copied from.
+# l1:         Primary flight path, metres, source to sample.
+# l2:         Secondary flight paths, metres, one value per focus group.
+# polar:      Effective 2-theta angles, degrees, one value per focus group.
+# azimuthal:  Effective azimuthal angles, degrees, one value per focus group.
+
+- valid_from: "2000-01-01"
+  source: "VULCAN_Characterization_2Banks_v2.txt"
+  l1: 43.754
+  l2: [2.009436, 2.009436]
+  polar: [90.122, 90.122]
+  azimuthal: [0.0, 0.0]
+
+- valid_from: "2017-07-01"
+  source: "VULCAN_Characterization_3Banks_v2.txt"
+  l1: 43.755
+  l2: [2.288371, 2.288371, 2.061211, 2.058998, 2.020524, 2.533234]
+  polar: [89.966, 89.966, 120.053, 150.040, 157.127, 65.518]
+  azimuthal: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+- valid_from: "2022-05-13"
+  source: "VULCAN_Characterization_6Banks_v2.txt"
+  l1: 43.755
+  l2: [2.296492906, 2.296492906, 1.999243]
+  polar: [89.9260985, 89.9260985, 149.8646347]
+  azimuthal: [0.0, 0.0, 0.0]
+
+- valid_from: "2026-01-01"
+  l1: 43.755
+  l2: [2.296, 2.296, 2.07, 2.07, 2.07, 2.53, 2.07, 2.07, 2.53]
+  polar: [90.0, 90.0, 120.0, 150.0, 157.0, 65.5, 150.0, 157.0, 65.5]
+  azimuthal: [180.0, 0.0, 0.0, 0.0, 180.0, 180.0, 0.0, 0.0, 0.0]
