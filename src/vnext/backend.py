@@ -64,7 +64,91 @@ class Backend(VNEXTBackend):
         - runs: Start run number
         - rune: End run number
         - chopruns: Chopruns where data are chopped from"""
-        return {"name": "vnextbin", "ipts": ipts, "runs": runs, "rune": rune, "chopruns": chopruns}
+        import datetime
+        from pathlib import Path
+
+        import h5py
+        from mantid.simpleapi import (
+            AlignAndFocusPowderSlim,  # ty: ignore[unresolved-import]
+            DeleteWorkspace,  # ty: ignore[unresolved-import]
+            SaveGSS,  # ty: ignore[unresolved-import]
+            mtd,
+        )
+
+        from vnext.calibration import compute_tof_bins, get_calibration_info
+
+        if chopruns != -1:
+            raise NotImplementedError("Binning of pre-chopped data is not yet implemented")
+
+        from vnext import Config
+
+        instr_home = Path(Config["instrument.home"])
+        # Chopper log names — first entry in each list is the preferred (current) name.
+        wl_keys = Config["instrument.PVLogs.choppers.skf34.wavelength"]
+        spd_keys = Config["instrument.PVLogs.choppers.skf34.speed"]
+
+        nexus_dir = instr_home / f"IPTS-{ipts}" / "nexus"
+        output_dir = instr_home / f"IPTS-{ipts}" / "shared" / "binned_data"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        run_end = rune if rune != -1 else runs
+        saved_files = []
+
+        for run in range(runs, run_end + 1):
+            nexus_file = nexus_dir / f"VULCAN_{run}.nxs.h5"
+            if not nexus_file.exists():
+                continue
+
+            # Read run metadata from NeXus.
+            # VULCAN has two chopper pairs; Skf34 (20 Hz, ~2.8 Å) is used for
+            # standard wide-range powder reduction.  Log names may vary by era —
+            # try each name in order and use the first one present.
+            with h5py.File(nexus_file, "r") as f:
+                logs = f["entry"]["DASlogs"]
+                run_date = datetime.datetime.fromisoformat(f["entry"]["start_time"][0].decode()[:19])
+                center_wavelength = float(next(logs[k] for k in wl_keys if k in logs)["value"][0])
+                frequency = float(next(logs[k] for k in spd_keys if k in logs)["value"][0])
+
+            calib_file, focus_pos = get_calibration_info(run_date)
+            tof = compute_tof_bins(focus_pos, center_wavelength, frequency)
+
+            ws_name = f"VULCAN_{run}"
+            output_file = output_dir / f"{run}.gda"
+
+            AlignAndFocusPowderSlim(
+                Filename=str(nexus_file),
+                CalFileName=str(calib_file),
+                L1=focus_pos.l1,
+                L2=focus_pos.l2,
+                Polar=focus_pos.polar,
+                Azimuthal=focus_pos.azimuthal,
+                BinningUnits="TOF",
+                XMin=tof.xmin,
+                XDelta=tof.xdelta,
+                XMax=tof.xmax,
+                LogBlockList=r"Phase*,Speed*,BL*:Chop:*,chopper*TDC",
+                OutputWorkspace=ws_name,
+            )
+
+            SaveGSS(
+                InputWorkspace=ws_name,
+                Filename=str(output_file),
+                SplitFiles=False,
+                Append=False,
+                Format="SLOG",
+                MultiplyByBinWidth=False,
+                ExtendedHeader=True,
+                UseSpectrumNumberAsBankID=True,
+            )
+
+            if ws_name in mtd:
+                DeleteWorkspace(ws_name)
+
+            saved_files.append(str(output_file))
+
+        if len(saved_files) == 1:
+            return {"output": saved_files[0]}
+        return {"output": str(output_dir)}
 
     def vnextbin_n(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
         return {"name": "vnextbin_n", "ipts": ipts, **kwargs}
