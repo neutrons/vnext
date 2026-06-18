@@ -1,5 +1,6 @@
 import datetime
 from dataclasses import dataclass
+from functools import cache
 
 
 @dataclass
@@ -15,6 +16,7 @@ class CalibrationFiles:
     cal_file: str
 
 
+@cache  # NOTE: standard cache is sufficient here, since it is always the same dict returned
 def load_calibration_files() -> dict[datetime.datetime, CalibrationFiles]:
     """Load the era-indexed calibration file references from the bundled YAML.
 

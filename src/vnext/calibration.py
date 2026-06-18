@@ -9,7 +9,7 @@ from mantid.kernel import Logger
 
 from vnext import Config
 from vnext._typing import FilePath
-from vnext.dao import CalibrationFiles, FocusPositions, TofBins  # noqa: F401 — re-exported
+from vnext.dao import CalibrationFiles, FocusPositions, TofBins
 from vnext.dao.calibration_files import load_calibration_files as _load_calibration_files
 from vnext.dao.focus_positions import load_focus_positions as _load_focus_positions
 

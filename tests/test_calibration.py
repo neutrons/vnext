@@ -161,5 +161,5 @@ def test_compute_tof_bins_from_nexus():
     nptest.assert_allclose(tof.xmin[2], 6241.62, rtol=1e-3)
 
     # xmax covers the full frame and exceeds all per-bank xmin
-    assert tof.xmax > max(tof.xmin)
+    assert min(tof.xmax) > max(tof.xmin)
     nptest.assert_allclose(tof.xmax, 58906.44, rtol=1e-3)

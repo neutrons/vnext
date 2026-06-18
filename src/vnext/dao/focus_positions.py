@@ -1,5 +1,6 @@
 import datetime
 from dataclasses import dataclass, field
+from functools import cache
 
 
 @dataclass
@@ -21,6 +22,11 @@ class FocusPositions:
     specnum: list[int] = field(default_factory=list)
 
     def __post_init__(self):
+        """
+        Validate the inputs values for focus position.
+        This runs after initialization.
+        Ensures all lists have the same length, and generates values for optional inputs
+        """
         self.l1 = float(self.l1)
         self.l2 = [float(v) for v in self.l2]
         self.polar = [float(v) for v in self.polar]
@@ -41,6 +47,7 @@ class FocusPositions:
             self.specnum = list(range(1, n + 1))
 
 
+@cache  # NOTE: standard cache is sufficient here, since it is always the same dict returned
 def load_focus_positions() -> dict[datetime.datetime, FocusPositions | str]:
     """Load the era-indexed focus positions from the bundled YAML.
 
