@@ -25,6 +25,8 @@ instrument:
     native:
       prefix: nexus/VULCAN_
       extension: .nxs.h5
+    start_time_log: /entry/start_time
+    das_logs: /entry/DASlogs
 
   PVLogs:
     rootGroup: /entry/DASlogs

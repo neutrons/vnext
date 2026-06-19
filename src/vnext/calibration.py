@@ -95,6 +95,28 @@ def get_calibration_info(date_aquired: datetime.datetime, config=None) -> tuple[
     return cal_file, focus_pos
 
 
+def extract_nexus_metadata(nexus_file: FilePath) -> tuple[datetime.datetime, float, float]:
+    """
+    Read run metadata from NeXus.
+    VULCAN has two chopper pairs; Skf34 (20 Hz, ~2.8 Å) is used for
+    standard wide-range powder reduction.  Log names may vary by era —
+    try each name in order and use the first one present.
+    """
+    import h5py
+
+    # Chopper log names — first entry in each list is the preferred (current) name.
+    wl_keys = Config["instrument.PVLogs.choppers.skf34.wavelength"]
+    spd_keys = Config["instrument.PVLogs.choppers.skf34.speed"]
+
+    with h5py.File(nexus_file, "r") as f:
+        logs = f[Config["instrument.nexus.das_logs"]]
+        run_date = datetime.datetime.fromisoformat(f[Config["instrument.nexus.start_time_log"]][0].decode()[:19])
+        center_wavelength = float(next(logs[k] for k in wl_keys if k in logs)["value"][0])
+        frequency = float(next(logs[k] for k in spd_keys if k in logs)["value"][0])
+
+    return run_date, center_wavelength, frequency
+
+
 def compute_tof_bins(
     focus_pos: FocusPositions,
     center_wavelength: float,

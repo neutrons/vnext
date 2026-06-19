@@ -1,6 +1,6 @@
 from typing import Any
 
-from vnext import UNSET_FLOAT, VNEXTBackend
+from vnext import UNSET_FLOAT, Config, VNEXTBackend
 
 
 def func(kwargs):
@@ -64,10 +64,8 @@ class Backend(VNEXTBackend):
         - runs: Start run number
         - rune: End run number
         - chopruns: Chopruns where data are chopped from"""
-        import datetime
         from pathlib import Path
 
-        import h5py
         from mantid.simpleapi import (
             AlignAndFocusPowderSlim,  # ty: ignore[unresolved-import]
             DeleteWorkspace,  # ty: ignore[unresolved-import]
@@ -75,16 +73,10 @@ class Backend(VNEXTBackend):
             mtd,
         )
 
-        from vnext.calibration import compute_tof_bins, get_calibration_info
+        from vnext.calibration import compute_tof_bins, extract_nexus_metadata, get_calibration_info
 
         if chopruns != -1:
             raise NotImplementedError("Binning of pre-chopped data is not yet implemented")
-
-        from vnext import Config
-
-        # Chopper log names — first entry in each list is the preferred (current) name.
-        wl_keys = Config["instrument.PVLogs.choppers.skf34.wavelength"]
-        spd_keys = Config["instrument.PVLogs.choppers.skf34.speed"]
 
         output_dir = Path(Config["instrument.reduction.bin"].format(IPTS=ipts))
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -97,17 +89,11 @@ class Backend(VNEXTBackend):
             if not nexus_file.exists():
                 continue
 
-            # Read run metadata from NeXus.
-            # VULCAN has two chopper pairs; Skf34 (20 Hz, ~2.8 Å) is used for
-            # standard wide-range powder reduction.  Log names may vary by era —
-            # try each name in order and use the first one present.
-            with h5py.File(nexus_file, "r") as f:
-                logs = f["entry"]["DASlogs"]
-                run_date = datetime.datetime.fromisoformat(f["entry"]["start_time"][0].decode()[:19])
-                center_wavelength = float(next(logs[k] for k in wl_keys if k in logs)["value"][0])
-                frequency = float(next(logs[k] for k in spd_keys if k in logs)["value"][0])
-
+            # get file metadata with run data, wavelength, and frequency
+            run_date, center_wavelength, frequency = extract_nexus_metadata(nexus_file)
+            # the run date can determine the calibration file to use and the focus positions
             calib_file, focus_pos = get_calibration_info(run_date)
+            # the focus positions with the wavelength and frequency determine the TOF binning
             tof = compute_tof_bins(focus_pos, center_wavelength, frequency)
 
             ws_name = f"VULCAN_{run}"

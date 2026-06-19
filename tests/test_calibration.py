@@ -1,15 +1,18 @@
 import datetime
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 import pytest
 from numpy import testing as nptest
 
+from vnext import Config
 from vnext.calibration import (
     FocusPositions,
     _bisect_era,
     _get_focuspositions_from_char_file,
     compute_tof_bins,
+    extract_nexus_metadata,
     get_calibration_info,
 )
 
@@ -128,6 +131,26 @@ def test_get_calibration_info_6bank():
     path, focus_pos = get_calibration_info(datetime.datetime(2026, 2, 14))
     assert path.name == "B123456DIFCs-12Cross-3456789Cal.h5"
     assert focus_pos.l1 == 43.755
+
+
+def test_extract_nexus_metadata():
+    import h5py
+
+    run_date_iso = "2020-01-01T12:00:00.000000"
+    wl_keys = ["BL7:Chop:Skf34:CenterWavelength", "skf34.lambda"]
+    spd_keys = ["BL7:Chop:Skf34:SpeedReq", "skf34.speed"]
+    # test_file = Config["instrument.data.file"].format(IPTS=37627, run=123456)
+    with NamedTemporaryFile(dir=Config["instrument.data.home"], suffix=".nxs.h5") as nxs:
+        with h5py.File(Path(nxs.name), "w") as f:
+            f[f"/entry/DASlogs/{wl_keys[0]}/value"] = [b"2.8"]
+            f[f"/entry/DASlogs/{spd_keys[0]}/value"] = [b"20.0"]
+            f["/entry/start_time"] = [b"2020-01-01T12:00:00.000000"]
+
+        run_date, center_wavelength, frequency = extract_nexus_metadata(nxs.name)
+
+    assert run_date == datetime.datetime.fromisoformat(run_date_iso)
+    assert center_wavelength == pytest.approx(2.8)
+    assert frequency == pytest.approx(20.0)
 
 
 def test_compute_tof_bins_from_nexus():
