@@ -162,6 +162,7 @@ clean-all = { description = "Clean all artifacts", depends-on = [
   "clean-docs",
   "clean-pypi",
 ] }
+vnext = { cmd = "vnext", description = "Launch the vnext interactive shell" }
 ty-check = { cmd = "ty check {{filename}}", description = "Run ty check", default-environment = "developer", args = [
   { "arg" = "filename", "default" = "" },
 ] }

@@ -26,7 +26,7 @@ class TofBins:
         This runs after initialization.  Ensures that all lists have either a single value. or the same length
         """
         self.xmin = [float(v) for v in self.xmin] if isinstance(self.xmin, list) else [float(self.xmin)]
-        self.xdelta = [float(v) for v in self.xdelta] if isinstance(self.xdelta, list) else [float(self.xdelta)]
+        self.xdelta = [-float(v) for v in self.xdelta] if isinstance(self.xdelta, list) else [float(self.xdelta)]
         self.xmax = [float(v) for v in self.xmax] if isinstance(self.xmax, list) else [float(self.xmax)]
 
         nmin = len(self.xmin)
