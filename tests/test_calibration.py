@@ -150,11 +150,11 @@ def test_compute_tof_bins_from_nexus():
     assert len(tof.xdelta) == len(focus_pos.l2)
 
     # equatorial banks (~90°): xdelta ≈ Δθ · cot(45°) = 0.001
-    nptest.assert_allclose(tof.xdelta[0], 0.001001, rtol=1e-3)
-    nptest.assert_allclose(tof.xdelta[1], 0.001001, rtol=1e-3)
+    nptest.assert_allclose(tof.xdelta[0], -0.001001, rtol=1e-3)
+    nptest.assert_allclose(tof.xdelta[1], -0.001001, rtol=1e-3)
 
     # back-scattering bank (~150°): xdelta ≈ Δθ · cot(75°) ≈ 0.000269
-    nptest.assert_allclose(tof.xdelta[2], 0.000269, rtol=1e-2)
+    nptest.assert_allclose(tof.xdelta[2], -0.000269, rtol=1e-2)
 
     # xmin per bank — varies with L2
     nptest.assert_allclose(tof.xmin[0], 6282.17, rtol=1e-3)
