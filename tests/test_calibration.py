@@ -139,7 +139,7 @@ def test_extract_nexus_metadata():
     run_date_iso = "2020-01-01T12:00:00.000000"
     wl_keys = ["BL7:Chop:Skf34:CenterWavelength", "skf34.lambda"]
     spd_keys = ["BL7:Chop:Skf34:SpeedReq", "skf34.speed"]
-    # test_file = Config["instrument.data.file"].format(IPTS=37627, run=123456)
+
     with NamedTemporaryFile(dir=Config["instrument.data.home"], suffix=".nxs.h5") as nxs:
         with h5py.File(Path(nxs.name), "w") as f:
             f[f"/entry/DASlogs/{wl_keys[0]}/value"] = [b"2.8"]
