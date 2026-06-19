@@ -21,8 +21,7 @@ def output_dir():
     """Yield the directory vnextbin will write .gda files to."""
     from vnext import Config
 
-    instr_home = Path(Config["instrument.home"])
-    d = instr_home / f"IPTS-{IPTS}" / "shared" / "binned_data"
+    d = Path(Config["instrument.reduction.bin"].format(IPTS=IPTS))
     d.mkdir(parents=True, exist_ok=True)
     yield d
     shutil.rmtree(d, ignore_errors=True)

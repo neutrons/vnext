@@ -82,20 +82,18 @@ class Backend(VNEXTBackend):
 
         from vnext import Config
 
-        instr_home = Path(Config["instrument.home"])
         # Chopper log names — first entry in each list is the preferred (current) name.
         wl_keys = Config["instrument.PVLogs.choppers.skf34.wavelength"]
         spd_keys = Config["instrument.PVLogs.choppers.skf34.speed"]
 
-        nexus_dir = instr_home / f"IPTS-{ipts}" / "nexus"
-        output_dir = instr_home / f"IPTS-{ipts}" / "shared" / "binned_data"
+        output_dir = Path(Config["instrument.reduction.bin"].format(IPTS=ipts))
         output_dir.mkdir(parents=True, exist_ok=True)
 
         run_end = rune if rune != -1 else runs
         saved_files = []
 
         for run in range(runs, run_end + 1):
-            nexus_file = nexus_dir / f"VULCAN_{run}.nxs.h5"
+            nexus_file = Path(Config["instrument.data.file"].format(IPTS=ipts, run=run))
             if not nexus_file.exists():
                 continue
 

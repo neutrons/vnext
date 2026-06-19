@@ -20,7 +20,7 @@ def test_config_substitution():
 
 def test_config_instrument_home():
     # In the test environment, instrument.home is overridden to tests/data/vulcan
-    assert "vulcan" in Config["instrument.home"].lower()
+    assert "tests" in Config["instrument.home"].lower()
 
 
 def test_config_nexus_keys():
