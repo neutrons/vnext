@@ -126,7 +126,7 @@ class Backend(VNEXTBackend):
                 XMax=tof.xmax,
                 LogBlockList=r"Phase*,Speed*,BL*:Chop:*,chopper*TDC",
                 OutputWorkspace=ws_name,
-                BinningMode="Logarithmic",
+                BinningMode=tof.binning_mode,
             )
 
             SaveGSS(

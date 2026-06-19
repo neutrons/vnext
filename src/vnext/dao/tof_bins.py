@@ -1,4 +1,7 @@
 from dataclasses import dataclass
+from typing import Literal
+
+BinningMode = Literal["Linear", "Logarithmic"]
 
 
 @dataclass
@@ -19,6 +22,7 @@ class TofBins:
     xmin: list[float]
     xdelta: list[float]
     xmax: list[float]
+    binning_mode: BinningMode = "Logarithmic"
 
     def __post_init__(self):
         """Validate the input values for TOF bins.

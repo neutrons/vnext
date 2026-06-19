@@ -163,3 +163,6 @@ def test_compute_tof_bins_from_nexus():
     # xmax covers the full frame and exceeds all per-bank xmin
     assert min(tof.xmax) > max(tof.xmin)
     nptest.assert_allclose(tof.xmax, 58906.44, rtol=1e-3)
+
+    # binning mode is logarithmic
+    assert tof.binning_mode == "Logarithmic"
