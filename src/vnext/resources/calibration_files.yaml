@@ -1,0 +1,16 @@
+# Calibration files for VULCAN, one entry per instrument era.
+#
+# valid_from:  ISO date (YYYY-MM-DD) when this configuration became active.
+# cal_file:    HDF5 or .cal file containing DIFC, grouping, and mask per detector.
+
+- valid_from: "2000-01-01"
+  cal_file: "vulcan_foc_all_2bank_11p.cal"
+
+- valid_from: "2017-07-01"
+  cal_file: "VULCAN_calibrate_2019_06_27.h5"
+
+- valid_from: "2022-05-13"
+  cal_file: "B123456DIFCs-12Cross-3456Cal_v4.h5"
+
+- valid_from: "2026-01-01"
+  cal_file: "B123456DIFCs-12Cross-3456789Cal.h5"

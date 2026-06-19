@@ -1,116 +1,53 @@
 import bisect
 import datetime
+import math
 import os
-from dataclasses import dataclass
+from collections.abc import Mapping
 from pathlib import Path
 
 from mantid.kernel import Logger
 
 from vnext import Config
 from vnext._typing import FilePath
+from vnext.dao import CalibrationFiles, FocusPositions, TofBins
+from vnext.dao.calibration_files import load_calibration_files as _load_calibration_files
+from vnext.dao.focus_positions import load_focus_positions as _load_focus_positions
 
 _log = Logger("vnext.calibration")
 
-
-@dataclass
-class FocusPositions:
-    l1: float
-    specnum: list[int]
-    l2: list[float]
-    polar: list[float]
-    azimuthal: list[float]
-
-    def __init__(
-        self,
-        l1: float | int,
-        l2: list[float] | list[int],
-        polar: list[float] | list[int],
-        azimuthal: list[float] | list[int],
-        specnum: list[int] | list[float] | None = None,
-    ):
-        """This will coerce all types and make sure all arrays are the same length"""
-        self.l1 = float(l1)
-        if not (len(l2) == len(polar) == len(azimuthal)):
-            raise ValueError(f"All arrays must be equal length: {len(l2)} == {len(polar)} == {len(azimuthal)}")
-        self.l2 = [float(item) for item in l2]  # convert to floats
-        self.polar = [float(item) for item in polar]  # convert to floats
-        self.azimuthal = [float(item) for item in azimuthal]  # convert to floats
-
-        if specnum is not None:  # implicit values for spectrum numbers
-            if len(l2) != len(specnum):
-                raise ValueError(f"All arrays must be equal length: {len(l2)} == {len(specnum)}")
-            self.specnum = [int(item) for item in specnum]
-        else:
-            self.specnum = list(range(1, len(self.l2) + 1))
+CALIB_FILES: dict[datetime.datetime, CalibrationFiles] = _load_calibration_files()
+FOCUS_POS_LIST: dict[datetime.datetime, FocusPositions | str] = _load_focus_positions()
 
 
 def _get_focuspositions_from_char_file(filepath: FilePath) -> FocusPositions:
+    """Load focus positions from a VULCAN characterisation file via PDLoadCharacterizations."""
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Characterization file does not exist: {filepath}")
 
     from mantid.simpleapi import PDLoadCharacterizations, mtd  # ty: ignore[unresolved-import]
 
-    # use mantid to parse the file
     wkspname = mtd.unique_name(5, prefix="pdchar")
     (_, _, l1, specnum, l2, polar, azimuthal) = PDLoadCharacterizations(
         Filename=str(filepath), OutputWorkspace=wkspname
     )
     if wkspname in mtd:
-        mtd.remove(wkspname)  # it wasn't needed
+        mtd.remove(wkspname)
 
-    # convert to the correct object type
     return FocusPositions(l1=l1, specnum=specnum, l2=l2, polar=polar, azimuthal=azimuthal)
 
 
-# files that have DIFC , grouping, and mask information for reduction keyed by the valid date
-CALIB_FILE_LIST: dict[datetime.datetime, FilePath] = {
-    datetime.datetime(2000, 1, 1): "vulcan_foc_all_2bank_11p.cal",
-    datetime.datetime(2017, 7, 1): "VULCAN_calibrate_2019_06_27.h5",
-    datetime.datetime(2022, 5, 13): "B123456DIFCs-12Cross-3456Cal_v4.h5",
-    datetime.datetime(2026, 1, 1): "B123456DIFCs-12Cross-3456789Cal.h5",
-}
+def _bisect_era(index: Mapping[datetime.datetime, object], date: datetime.datetime) -> datetime.datetime:
+    """Return the era key whose valid_from is the latest date on or before *date*."""
+    valid_dates = sorted(index.keys())
+    idx = bisect.bisect_right(valid_dates, date) - 1
+    if idx < 0 or idx >= len(valid_dates):
+        raise ValueError(f"Acquisition date {date} is out of range for {list(index.keys())}")
+    return valid_dates[idx]
 
-# files that have the focus positions and bin edges for reduction keyed by the valid date
-FOCUS_POS_LIST = {
-    # really old ones are in a characterization file
-    datetime.datetime(2000, 1, 1): "VULCAN_Characterization_2Banks_v2.txt",
-    # newer ones are hard coded in the code since they are used for focusing and we don't want to have to
-    # read a file to get them
-    datetime.datetime(2017, 7, 1):
-    # copied from VULCAN_Characterization_3Banks_v2.txt
-    FocusPositions(
-        l1=43.755,
-        l2=[2.288371, 2.288371, 2.061211, 2.058998, 2.020524, 2.533234],
-        polar=[89.966, 89.966, 120.053, 150.040, 157.127, 65.518],
-        azimuthal=[0, 0, 0, 0, 0, 0],
-    ),
-    datetime.datetime(2022, 5, 13):  # copied from "VULCAN_Characterization_6Banks_v2.txt",
-    FocusPositions(
-        l1=43.755,
-        l2=[2.296492906, 2.296492906, 1.999243],
-        polar=[89.9260985, 89.9260985, 149.8646347],
-        azimuthal=[0, 0, 0],
-    ),
-    datetime.datetime(2026, 1, 1): FocusPositions(
-        l1=43.755,
-        l2=[2.296, 2.296, 2.07, 2.07, 2.07, 2.53, 2.07, 2.07, 2.53],
-        polar=[90, 90, 120, 150, 157, 65.5, 150, 157, 65.5],
-        azimuthal=[180, 0, 0, 0, 180, 180, 0, 0, 0],
-    ),
-}
 
-"""
-PREVIOUS code also had bonus files for copying exact bin edges from vdrive
-    # 2000-1-1 ~ 2017-6-30
-    "/SNS/VULCAN/shared/CALIBRATION/2011_1_7/vdrive_log_bin.dat",
-    # 2017-7-1 ~ 2022-11-4
-    "/SNS/VULCAN/shared/CALIBRATION/2017_8_11_CAL/vdrive_3bank_bin.h5",
-    # 2022-11-5 ~ current
-    "/SNS/VULCAN/shared/Malcolm/vdrive_6bank_bin.h5",  # used for matching bin edges to vdrive output
-
-It has ben decided that it was always a matter of defining histograms by bin boundary vs bin centers. Inputs are being
-modified to account for this.
-"""
+def _calibration_home(config) -> Path:
+    """Resolve the calibration home directory from a ``neutrons_standard`` config object."""
+    return Path(config["instrument.calibration.home"]).expanduser()
 
 
 def get_calibration_info(date_aquired: datetime.datetime, config=None) -> tuple[Path, FocusPositions]:
@@ -139,47 +76,78 @@ def get_calibration_info(date_aquired: datetime.datetime, config=None) -> tuple[
     calibration file may be None if there are no calibration files for the given date. The focus positions and
     calibration file is not checked for existence.
     """
-    # convert the dates into a list and use bisect to find the correct calibration files
-    valid_dates = list(CALIB_FILE_LIST.keys())
-    # locate the position of the date in the list
-    char_index = bisect.bisect_right(valid_dates, date_aquired) - 1
-    # error check that the result makes sense
-    if char_index < 0 or char_index >= len(valid_dates):
-        raise ValueError("File date is out of range for calibration files")
-    date = valid_dates[char_index]
-    _log.debug(f"Calibration information for date {date_aquired} is valid from {date}")
+    if config is None:
+        config = Config
+    calib_path = _calibration_home(config)
 
-    # convert the calibration file into a Path
-    calib_file = CALIB_FILE_LIST[date]
-    if type(calib_file) is not Path:
-        if config is None:  # lazy lookup of the shared singleton
-            config = Config
-        calib_path = Path(config["instrument.calibration.home"]).expanduser()
-        calib_file = calib_path / calib_file
-        # write the result back into the dict so we don't have to do it again
-        CALIB_FILE_LIST[date] = calib_file
-    #
-    focus_pos = FOCUS_POS_LIST[date]
-    if type(focus_pos) is not FocusPositions:
-        # create the path to a file to read
-        if config is None:  # lazy lookup of the shared singleton
-            config = Config
-        calib_path = Path(config["instrument.calibration.home"]).expanduser()
-        focus_pos = calib_path / str(focus_pos)  # force type
-        focus_pos = _get_focuspositions_from_char_file(focus_pos)  # changing type
-        # write the result back into the dict so we don't have to do it again
-        FOCUS_POS_LIST[date] = focus_pos
+    cal_era = _bisect_era(CALIB_FILES, date_aquired)
+    _log.debug(f"Using calibration era {cal_era} for acquisition date {date_aquired}")
+    cal_file = calib_path / CALIB_FILES[cal_era].cal_file
 
-    # return the results
-    return calib_file, focus_pos
+    focus_era = _bisect_era(FOCUS_POS_LIST, date_aquired)
+    focus_pos = FOCUS_POS_LIST[focus_era]
+    if not isinstance(focus_pos, FocusPositions):
+        raise TypeError(
+            f"Focus positions for era {focus_era} are a char_file reference and must be "
+            "resolved to inline values in focus_positions.yaml before use"
+        )
+
+    return cal_file, focus_pos
 
 
-"""
-# TODO should ask the config object up top
-calfile = Path("/home/pf9/build/mantid/vulcanperf/B123456DIFCs-12Cross-3456789Cal.h5")
-# TODO should use positions from elsewhere
-l1 = 43.755
-l2 = [2.296,2.296,2.07,2.07,2.07,2.53,2.07,2.07,2.53]
-polar=[90,90,120,150,157,65.5,150,157,65.5]
-azimuthal=[180,0,0,0,180,180,0,0,0]
-"""
+def compute_tof_bins(
+    focus_pos: FocusPositions,
+    center_wavelength: float,
+    frequency: float,
+    *,
+    delta_theta: float = 0.001,
+) -> TofBins:
+    """Compute per-bank TOF binning parameters from instrument geometry and run settings.
+
+    XMin and XMax are derived from the wavelength band the chopper selects, converted
+    per bank via the de Broglie relation (TOF in microseconds):
+
+        TOF[μs] = λ[Å] · (L1 + L2[bank]) · m_n/h · 1e-4
+
+    The frame bandwidth in Å is determined by the chopper frequency and L1:
+
+        Δλ[Å] = (h/m_n) · 1e10 / (frequency · L1)
+
+    XDelta per bank is the logarithmic fractional bin step Δd/d, set to the dominant
+    angular resolution term so that every diffraction peak occupies the same number of
+    bins regardless of its d-spacing (peak width scales as Δd ∝ d):
+
+        Δd/d ≈ Δθ · |cot(θ_bank)|    where θ_bank = 2θ_bank / 2
+
+    Args:
+        focus_pos: per-bank detector geometry.
+        center_wavelength: chopper centre wavelength (Å).
+        frequency: chopper pulse repetition frequency (Hz).
+        delta_theta: effective angular uncertainty of each focused bank (radians);
+            default 0.001 rad reproduces the known VULCAN values of 0.001 at 90°
+            and ~0.0003 at back-scattering angles.
+    """
+    from mantid.kernel import PhysicalConstants  # ty: ignore[unresolved-import]
+
+    h_over_mn = PhysicalConstants.h / PhysicalConstants.NeutronMass  # m² s⁻¹
+
+    # Wavelength band: Δλ = (h/m_n) / (f · L1), converted m → Å
+    bandwidth = h_over_mn * 1e10 / (frequency * focus_pos.l1)
+    lambda_min = max(center_wavelength - bandwidth / 2.0, 0.0)
+    lambda_max = center_wavelength + bandwidth / 2.0
+
+    # de Broglie: TOF[μs] = λ[Å] · L[m] · 1e-4 / (h/m_n)
+    tof_factor = 1e-4 / h_over_mn
+
+    xmin = []
+    xdelta = []
+    for l2, polar in zip(focus_pos.l2, focus_pos.polar):
+        flight_path = focus_pos.l1 + l2
+        xmin.append(lambda_min * flight_path * tof_factor)
+        theta = math.radians(polar / 2.0)
+        xdelta.append(delta_theta * abs(math.cos(theta) / math.sin(theta)))
+
+    # xmax is scalar: use the longest flight path to cover the full wavelength frame
+    xmax = lambda_max * (focus_pos.l1 + max(focus_pos.l2)) * tof_factor
+
+    return TofBins(xmin=xmin, xdelta=xdelta, xmax=xmax)
