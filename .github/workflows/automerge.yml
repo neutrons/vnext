@@ -13,7 +13,7 @@ jobs:
     # do not run in forks
     if: ${{ github.repository_owner == 'neutrons' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: next  # going to commit to here
           fetch-depth: 0  # full git repository
