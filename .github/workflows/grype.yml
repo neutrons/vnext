@@ -88,4 +88,4 @@ jobs:
       - name: Run the Grype scan action
         uses: neutrons/conda-actions/grype@v2
         with:
-          path: ${{ steps.installed.outputs.install_dir }}
+          path: ${{ steps.installed.outputs.conda_install_dir }}

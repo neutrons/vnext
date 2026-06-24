@@ -93,7 +93,7 @@ neutrons_standard = "*"        # shared Config/infrastructure from the neutrons 
 name = "vnext"
 
 [tool.pixi.package.build]
-backend = { name = "pixi-build-python", version = "0.5.*" }
+backend = { name = "pixi-build-python", version = ">=0.5" }
 
 # Environments and Features
 
