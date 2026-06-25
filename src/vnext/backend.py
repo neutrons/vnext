@@ -1,6 +1,16 @@
+from pathlib import Path
 from typing import Any
 
+from mantid.simpleapi import (
+    AlignAndFocusPowderSlim,  # ty: ignore[unresolved-import]
+    DeleteWorkspace,  # ty: ignore[unresolved-import]
+    SaveGSS,  # ty: ignore[unresolved-import]
+    mtd,
+)
+
 from vnext import UNSET_FLOAT, Config, VNEXTBackend
+from vnext.calibration import compute_tof_bins, extract_nexus_metadata, get_calibration_info
+from vnext.fileservice import get_runs_in_range
 
 
 def func(kwargs):
@@ -19,7 +29,7 @@ class Backend(VNEXTBackend):
         self,
         *,
         ipts: int,
-        runs: int = -1,
+        runs: int,
         rune: int = -1,
         chopruns: int = -1,
         runv: int = -1,
@@ -55,7 +65,7 @@ class Backend(VNEXTBackend):
         self,
         *,
         ipts: int,
-        runs: int = -1,
+        runs: int,
         rune: int = -1,
         chopruns: int = -1,
     ) -> dict[str, Any]:
@@ -64,16 +74,6 @@ class Backend(VNEXTBackend):
         - runs: Start run number
         - rune: End run number
         - chopruns: Chopruns where data are chopped from"""
-        from pathlib import Path
-
-        from mantid.simpleapi import (
-            AlignAndFocusPowderSlim,  # ty: ignore[unresolved-import]
-            DeleteWorkspace,  # ty: ignore[unresolved-import]
-            SaveGSS,  # ty: ignore[unresolved-import]
-            mtd,
-        )
-
-        from vnext.calibration import compute_tof_bins, extract_nexus_metadata, get_calibration_info
 
         if chopruns != -1:
             raise NotImplementedError("Binning of pre-chopped data is not yet implemented")
@@ -82,13 +82,13 @@ class Backend(VNEXTBackend):
         output_dir.mkdir(parents=True, exist_ok=True)
 
         run_end = rune if rune != -1 else runs
+        all_runs = get_runs_in_range(ipts, runs, run_end)
+        if len(all_runs) == 0:
+            raise ValueError(f"No valid runs found for IPTS {ipts} in range {runs}-{run_end}")
+
         saved_files = []
 
-        for run in range(runs, run_end + 1):
-            nexus_file = Path(Config["instrument.data.file"].format(IPTS=ipts, run=run))
-            if not nexus_file.exists():
-                continue
-
+        for run, nexus_file in all_runs.items():
             # get file metadata with run data, wavelength, and frequency
             run_date, center_wavelength, frequency = extract_nexus_metadata(nexus_file)
             # the run date can determine the calibration file to use and the focus positions
@@ -145,7 +145,7 @@ class Backend(VNEXTBackend):
         self,
         *,
         ipts: int,
-        runs: int = -1,
+        runs: int,
         dbin: float = 1,
         minv: float = UNSET_FLOAT,
         maxv: float = UNSET_FLOAT,
@@ -165,7 +165,7 @@ class Backend(VNEXTBackend):
         self,
         *,
         ipts: int,
-        runs: int = -1,
+        runs: int,
         se: str = "Temperature",
         dse: float = 1,
         minv: float = UNSET_FLOAT,
@@ -184,7 +184,7 @@ class Backend(VNEXTBackend):
         self,
         *,
         ipts: int,
-        runs: int = -1,
+        runs: int,
         rune: int = -1,
         chopruns: int = -1,
         runv: int = -1,
@@ -226,7 +226,7 @@ class Backend(VNEXTBackend):
         self,
         *,
         ipts: int,
-        runs: int = -1,
+        runs: int,
         rune: int = -1,
         choprun: int = -1,
         runm: int = -1,

@@ -31,13 +31,13 @@ def output_dir():
 def mantid_mocks():
     """Patch the three Mantid calls inside vnextbin and yield the mock pair."""
     mock_mtd = MagicMock()
-    mock_mtd.__contains__ = lambda *_: False  # ws_name not in mtd → no DeleteWorkspace
+    mock_mtd.__contains__ = lambda *_: False
 
     with (
-        patch("mantid.simpleapi.AlignAndFocusPowderSlim") as mock_align,
-        patch("mantid.simpleapi.SaveGSS") as mock_save,
-        patch("mantid.simpleapi.DeleteWorkspace"),
-        patch("mantid.simpleapi.mtd", mock_mtd),
+        patch("vnext.backend.AlignAndFocusPowderSlim") as mock_align,
+        patch("vnext.backend.SaveGSS") as mock_save,
+        patch("vnext.backend.DeleteWorkspace"),
+        patch("vnext.backend.mtd", mock_mtd),
     ):
         yield mock_align, mock_save
 
@@ -48,16 +48,28 @@ def mantid_mocks():
 
 
 def test_vnextbin_chopruns_raises():
-    with pytest.raises(NotImplementedError):
-        Backend().vnextbin(ipts=IPTS, chopruns=1)
+    with pytest.raises(NotImplementedError) as excinfo:
+        Backend().vnextbin(ipts=IPTS, runs=1, chopruns=1)
+    assert excinfo.value.args[0] == "Binning of pre-chopped data is not yet implemented"
 
 
+def test_vnextbin_no_runs_raises():
+    with pytest.raises(ValueError) as excinfo:
+        Backend().vnextbin(ipts=IPTS, runs=2, rune=4)  # runs 2-4 do not exist
+    assert excinfo.value.args[0] == f"No valid runs found for IPTS {IPTS} in range 2-4"
+
+
+@pytest.mark.usefixtures("mantid_mocks")
 def test_vnextbin_missing_run_returns_dir(output_dir):
-    """When no NeXus file exists the run is silently skipped and the output
-    directory path is returned (no files → multi-file fallback)."""
-    result = Backend().vnextbin(ipts=IPTS, runs=999999)
+    """
+    When a run in the range does not have a NeXus file,
+    vnextbin silently skips it.
+    An error is only raised if no valid files are found in the range.
+    """
+    result = Backend().vnextbin(ipts=IPTS, runs=RUN, rune=RUN + 4)  # RUN+1 through RUN+4 do not exist
     assert "output" in result
-    assert Path(result["output"]) == output_dir
+    # check against single-run name, which is the exact file path (not dir)
+    assert Path(result["output"]) == output_dir / f"{RUN}.gda"
 
 
 # ---------------------------------------------------------------------------
