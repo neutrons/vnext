@@ -116,17 +116,17 @@ def sum_gss_files(
     if runlist is not None:
         runs = min(runlist)
         rune = max(runlist)
-    elif runfile is not None:
+    elif runfile:
         file_runs = [int(tok) for tok in Path(runfile).read_text().split()]
         runs = min(file_runs)
         rune = max(file_runs)
 
-    run_numbers = get_bins_in_range(ipts, runs, rune)
-    if not run_numbers:
-        raise FileNotFoundError(f"No GSAS files found for runs {runs}-{rune} in IPTS {ipts}")
-
     output_dir = Path(Config["instrument.reduction.sum"].format(IPTS=ipts))
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    run_numbers = get_bins_in_range(ipts, runs, rune)
+    if not run_numbers:
+        return {"output": str(output_dir)}
 
     sum_ws = "vnextsum_accumulator"
     first_run = None

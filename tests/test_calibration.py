@@ -12,9 +12,9 @@ from vnext.calibration import (
     _bisect_era,
     _get_focuspositions_from_char_file,
     compute_tof_bins,
-    extract_nexus_metadata,
     get_calibration_info,
 )
+from vnext.nexus import extract_nexus_metadata
 
 TESTS_DIR = Path(__file__).parent
 CALIB_DIR = TESTS_DIR / "data"

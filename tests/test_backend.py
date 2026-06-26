@@ -35,10 +35,10 @@ def mantid_mocks():
     mock_mtd.__contains__ = lambda *_: False
 
     with (
-        patch("vnext.backend.AlignAndFocusPowderSlim") as mock_align,
-        patch("vnext.backend.SaveGSS") as mock_save,
-        patch("vnext.backend.DeleteWorkspace"),
-        patch("vnext.backend.mtd", mock_mtd),
+        patch("vnext.reduction.AlignAndFocusPowderSlim") as mock_align,
+        patch("vnext.gsas.SaveGSS") as mock_save,
+        patch("vnext.reduction.DeleteWorkspace"),
+        patch("vnext.reduction.mtd", mock_mtd),
     ):
         yield mock_align, mock_save
 
@@ -79,7 +79,7 @@ def test_vnextbin_no_tof_raises():
     If the run's NeXus file has no valid acquisition date, vnextbin raises an error.
     """
     steam_age = datetime.datetime(1800, 1, 1, 1)
-    with patch("vnext.backend.extract_nexus_metadata", return_value=(steam_age, 0.0, 0.0)):
+    with patch("vnext.reduction.extract_nexus_metadata", return_value=(steam_age, 0.0, 0.0)):
         with pytest.raises(ValueError) as excinfo:
             Backend().vnextbin(ipts=IPTS, runs=RUN)
         assert f"Acquisition date {steam_age} is out of range" in excinfo.value.args[0]
@@ -152,13 +152,13 @@ def mantid_norm_mocks():
     mock_mtd.__contains__ = lambda *_: False  # nothing in mtd → skip DeleteWorkspace
 
     with (
-        patch("mantid.simpleapi.AlignAndFocusPowderSlim") as mock_align,
-        patch("mantid.simpleapi.SaveGSS"),
-        patch("mantid.simpleapi.DeleteWorkspace"),
-        patch("mantid.simpleapi.RebinToWorkspace") as mock_rebin,
-        patch("mantid.simpleapi.Divide") as mock_divide,
-        patch("mantid.simpleapi.SmoothData") as mock_smooth,
-        patch("mantid.simpleapi.mtd", mock_mtd),
+        patch("vnext.reduction.AlignAndFocusPowderSlim") as mock_align,
+        patch("vnext.gsas.SaveGSS"),
+        patch("vnext.reduction.DeleteWorkspace"),
+        patch("vnext.reduction.RebinToWorkspace") as mock_rebin,
+        patch("vnext.reduction.Divide") as mock_divide,
+        patch("vnext.reduction.SmoothData") as mock_smooth,
+        patch("vnext.reduction.mtd", mock_mtd),
     ):
         yield {"align": mock_align, "rebin": mock_rebin, "divide": mock_divide, "smooth": mock_smooth}
 
@@ -211,10 +211,8 @@ def binned_dirs():
     """Create the binned_data input dir and Summed_GDA output dir, then clean up."""
     from vnext import Config
 
-    instr_home = Path(Config["instrument.home"])
-    shared = instr_home / f"IPTS-{IPTS}" / "shared"
-    binned = shared / "binned_data"
-    summed = shared / "Summed_GDA"
+    binned = Path(Config["instrument.reduction.bin"].format(IPTS=IPTS))
+    summed = Path(Config["instrument.reduction.sum"].format(IPTS=IPTS))
     binned.mkdir(parents=True, exist_ok=True)
     yield binned, summed
     shutil.rmtree(binned, ignore_errors=True)

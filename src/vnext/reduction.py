@@ -108,7 +108,7 @@ def bin_runs(ipts: int, runs: int, rune: int, *, runv: int = -1, smooth: bool = 
 
     all_runs = get_runs_in_range(ipts, runs, rune)
     if len(all_runs) == 0:
-        raise ValueError(f"No valid runs found for IPTS {ipts} in range {runs}-{rune + 1}")
+        raise ValueError(f"No valid runs found for IPTS {ipts} in range {runs}-{rune}")
 
     saved_files = []
 

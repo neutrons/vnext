@@ -263,7 +263,8 @@ class Backend(VNEXTBackend):
         log_info = extract_log(nexus_file, name)
 
         result = {"ipts": ipts, "run": runs, **log_info}
-        plotting.plot_log(result, show=True)
+        if name:
+            plotting.plot_log(result, show=True)
         return result
 
     def vnextfit(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:

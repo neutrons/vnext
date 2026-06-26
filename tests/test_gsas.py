@@ -16,8 +16,7 @@ def binned_dir():
     """Create a scratch binned_data directory for GSAS fixtures and clean up."""
     from vnext import Config
 
-    instr_home = Path(Config["instrument.home"])
-    d = instr_home / f"IPTS-{IPTS}" / "shared" / "binned_data"
+    d = Path(Config["instrument.reduction.bin"].format(IPTS=IPTS))
     d.mkdir(parents=True, exist_ok=True)
     yield d
     shutil.rmtree(d, ignore_errors=True)
