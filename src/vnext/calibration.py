@@ -12,11 +12,14 @@ from vnext._typing import FilePath
 from vnext.dao import CalibrationFiles, FocusPositions, TofBins
 from vnext.dao.calibration_files import load_calibration_files as _load_calibration_files
 from vnext.dao.focus_positions import load_focus_positions as _load_focus_positions
+from vnext.dao.tof_bins import TOF_MAX_DEFAULT, TOF_MIN_DEFAULT
+from vnext.dao.tof_bins import load_tof_bins as _load_tof_bins
 
 _log = Logger("vnext.calibration")
 
 CALIB_FILES: dict[datetime.datetime, CalibrationFiles] = _load_calibration_files()
 FOCUS_POS_LIST: dict[datetime.datetime, FocusPositions | str] = _load_focus_positions()
+TOF_BIN_LIST: dict[datetime.datetime, TofBins] = _load_tof_bins()
 
 
 def _get_focuspositions_from_char_file(filepath: FilePath) -> FocusPositions:
@@ -55,13 +58,12 @@ def get_calibration_info(date_aquired: datetime.datetime, config=None) -> tuple[
     Get the correct calibration files for reduction based on the date of acquisition of the data. This will use the
     date of the NeXus file to determine which calibration files to use for reduction.
 
-    Usage example
-
     Parameters:
     - date_aquired: Date data was measured to find correct calibration information
     - config: Alternate configuration providing ``instrument.calibration.home``. Defaults to the
       shared ``neutrons_standard`` ``Config`` singleton. Mainly used in testing.
 
+    Usage example
     .. code-block::
 
        import vnext
@@ -95,6 +97,26 @@ def get_calibration_info(date_aquired: datetime.datetime, config=None) -> tuple[
     return cal_file, focus_pos
 
 
+def get_tof_info(date_aquired: datetime.datetime) -> TofBins:
+    """
+    Get the correct TOF binning parameters for reduction based on the date of acquisition of the data.
+
+    Parameters:
+    - date_aquired: Date data was measured to find correct calibration information
+
+    The binning will be returned as a TofBins object
+    """
+    tof_era = _bisect_era(TOF_BIN_LIST, date_aquired)
+    _log.debug(f"Using TOF binning era {tof_era} for acquisition date {date_aquired}")
+    tof_bins = TOF_BIN_LIST[tof_era]
+    if not isinstance(tof_bins, TofBins):
+        raise TypeError(
+            f"TOF binning for era {tof_era} is a reference and must be "
+            "resolved to inline values in tof_bins.yaml before use"
+        )
+    return tof_bins
+
+
 def extract_nexus_metadata(nexus_file: FilePath) -> tuple[datetime.datetime, float, float]:
     """
     Read run metadata from NeXus.
@@ -119,21 +141,15 @@ def extract_nexus_metadata(nexus_file: FilePath) -> tuple[datetime.datetime, flo
 
 def compute_tof_bins(
     focus_pos: FocusPositions,
-    center_wavelength: float,
-    frequency: float,
     *,
     delta_theta: float = 0.001,
 ) -> TofBins:
     """Compute per-bank TOF binning parameters from instrument geometry and run settings.
 
-    XMin and XMax are derived from the wavelength band the chopper selects, converted
-    per bank via the de Broglie relation (TOF in microseconds):
+    XMin on VULCAN defaults to 5000 μs, and XMax to 70000 μs.
 
-        TOF[μs] = λ[Å] · (L1 + L2[bank]) · m_n/h · 1e-4
-
-    The frame bandwidth in Å is determined by the chopper frequency and L1:
-
-        Δλ[Å] = (h/m_n) · 1e10 / (frequency · L1)
+    To align different log binning conventions (Mantid bin-edges vs VDRIVE bin-centers),
+    the XMin value is adjusted backward by half of a (linear) bin step.
 
     XDelta per bank is the logarithmic fractional bin step Δd/d, set to the dominant
     angular resolution term so that every diffraction peak occupies the same number of
@@ -149,27 +165,17 @@ def compute_tof_bins(
             default 0.001 rad reproduces the known VULCAN values of 0.001 at 90°
             and ~0.0003 at back-scattering angles.
     """
-    from mantid.kernel import PhysicalConstants  # ty: ignore[unresolved-import]
-
-    h_over_mn = PhysicalConstants.h / PhysicalConstants.NeutronMass  # m² s⁻¹
-
-    # Wavelength band: Δλ = (h/m_n) / (f · L1), converted m → Å
-    bandwidth = h_over_mn * 1e10 / (frequency * focus_pos.l1)
-    lambda_min = max(center_wavelength - bandwidth / 2.0, 0.0)
-    lambda_max = center_wavelength + bandwidth / 2.0
-
-    # de Broglie: TOF[μs] = λ[Å] · L[m] · 1e-4 / (h/m_n)
-    tof_factor = 1e-4 / h_over_mn
-
     xmin = []
     xdelta = []
-    for l2, polar in zip(focus_pos.l2, focus_pos.polar):
-        flight_path = focus_pos.l1 + l2
-        xmin.append(lambda_min * flight_path * tof_factor)
+    for polar in focus_pos.polar:
+        # flight_path = focus_pos.l1 + l2
+        # xmin.append(lambda_min * flight_path * tof_factor)
         theta = math.radians(polar / 2.0)
         xdelta.append(delta_theta * abs(math.cos(theta) / math.sin(theta)))
+        # xmin shifted backward by half a linear bin step to align with VDRIVE bin-centers
+        xmin.append(TOF_MIN_DEFAULT * (1.0 - 0.5 * xdelta[-1]))
 
-    # xmax is scalar: use the longest flight path to cover the full wavelength frame
-    xmax = lambda_max * (focus_pos.l1 + max(focus_pos.l2)) * tof_factor
+    # xmax will be constant for all banks
+    xmax = [TOF_MAX_DEFAULT] * len(focus_pos.l2)
 
     return TofBins(xmin=xmin, xdelta=xdelta, xmax=xmax)

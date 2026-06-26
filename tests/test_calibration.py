@@ -166,26 +166,26 @@ def test_compute_tof_bins_from_nexus():
     assert frequency == pytest.approx(20.0)
 
     _, focus_pos = get_calibration_info(run_date)
-    tof = compute_tof_bins(focus_pos, center_wavelength, frequency)
+    tof = compute_tof_bins(focus_pos)
 
     # one entry per focus group
     assert len(tof.xmin) == len(focus_pos.l2)
     assert len(tof.xdelta) == len(focus_pos.l2)
 
     # equatorial banks (~90°): xdelta ≈ Δθ · cot(45°) = 0.001
-    nptest.assert_allclose(tof.xdelta[0], 0.001001, rtol=1e-3)
-    nptest.assert_allclose(tof.xdelta[1], 0.001001, rtol=1e-3)
+    nptest.assert_allclose(tof.xdelta[0], 0.001001, atol=1e-6)
+    nptest.assert_allclose(tof.xdelta[1], 0.001001, atol=1e-6)
 
     # back-scattering bank (~150°): xdelta ≈ Δθ · cot(75°) ≈ 0.000269
-    nptest.assert_allclose(tof.xdelta[2], 0.000269, rtol=1e-2)
+    nptest.assert_allclose(tof.xdelta[2], 0.000269, atol=1e-6)
 
     # xmin per bank — varies with L2
-    nptest.assert_allclose(tof.xmin[0], 6282.17, rtol=1e-3)
-    nptest.assert_allclose(tof.xmin[2], 6241.62, rtol=1e-3)
+    nptest.assert_allclose(tof.xmin[0], 4997.5, rtol=1e-6)
+    nptest.assert_allclose(tof.xmin[2], 4999.327, rtol=1e-6)
 
     # xmax covers the full frame and exceeds all per-bank xmin
     assert min(tof.xmax) > max(tof.xmin)
-    nptest.assert_allclose(tof.xmax, 58906.44, rtol=1e-3)
+    assert tof.xmax == [70000.0] * len(focus_pos.l2)
 
     # binning mode is logarithmic
     assert tof.binning_mode == "Logarithmic"

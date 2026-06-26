@@ -1,3 +1,4 @@
+import datetime
 import shutil
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -70,6 +71,18 @@ def test_vnextbin_missing_run_returns_dir(output_dir):
     assert "output" in result
     # check against single-run name, which is the exact file path (not dir)
     assert Path(result["output"]) == output_dir / f"{RUN}.gda"
+
+
+@pytest.mark.usefixtures("mantid_mocks")
+def test_vnextbin_no_tof_raises():
+    """
+    If the run's NeXus file has no valid acquisition date, vnextbin raises an error.
+    """
+    steam_age = datetime.datetime(1800, 1, 1, 1)
+    with patch("vnext.backend.extract_nexus_metadata", return_value=(steam_age, 0.0, 0.0)):
+        with pytest.raises(ValueError) as excinfo:
+            Backend().vnextbin(ipts=IPTS, runs=RUN)
+        assert f"Acquisition date {steam_age} is out of range" in excinfo.value.args[0]
 
 
 # ---------------------------------------------------------------------------

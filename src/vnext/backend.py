@@ -9,7 +9,7 @@ from mantid.simpleapi import (
 )
 
 from vnext import UNSET_FLOAT, Config, VNEXTBackend
-from vnext.calibration import compute_tof_bins, extract_nexus_metadata, get_calibration_info
+from vnext.calibration import extract_nexus_metadata, get_calibration_info, get_tof_info
 from vnext.fileservice import get_runs_in_range
 
 
@@ -94,7 +94,7 @@ class Backend(VNEXTBackend):
             # the run date can determine the calibration file to use and the focus positions
             calib_file, focus_pos = get_calibration_info(run_date)
             # the focus positions with the wavelength and frequency determine the TOF binning
-            tof = compute_tof_bins(focus_pos, center_wavelength, frequency)
+            tof = get_tof_info(run_date)
 
             ws_name = f"VULCAN_{run}"
             output_file = output_dir / f"{run}.gda"
