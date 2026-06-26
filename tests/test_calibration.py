@@ -1,15 +1,18 @@
 import datetime
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 import pytest
 from numpy import testing as nptest
 
+from vnext import Config
 from vnext.calibration import (
     FocusPositions,
     _bisect_era,
     _get_focuspositions_from_char_file,
     compute_tof_bins,
+    extract_nexus_metadata,
     get_calibration_info,
 )
 
@@ -130,6 +133,26 @@ def test_get_calibration_info_6bank():
     assert focus_pos.l1 == 43.755
 
 
+def test_extract_nexus_metadata():
+    import h5py
+
+    run_date_iso = "2020-01-01T12:00:00.000000"
+    wl_keys = ["BL7:Chop:Skf34:CenterWavelength", "skf34.lambda"]
+    spd_keys = ["BL7:Chop:Skf34:SpeedReq", "skf34.speed"]
+
+    with NamedTemporaryFile(dir=Config["instrument.data.home"], suffix=".nxs.h5") as nxs:
+        with h5py.File(Path(nxs.name), "w") as f:
+            f[f"/entry/DASlogs/{wl_keys[0]}/value"] = [b"2.8"]
+            f[f"/entry/DASlogs/{spd_keys[0]}/value"] = [b"20.0"]
+            f["/entry/start_time"] = [b"2020-01-01T12:00:00.000000"]
+
+        run_date, center_wavelength, frequency = extract_nexus_metadata(nxs.name)
+
+    assert run_date == datetime.datetime.fromisoformat(run_date_iso)
+    assert center_wavelength == pytest.approx(2.8)
+    assert frequency == pytest.approx(20.0)
+
+
 def test_compute_tof_bins_from_nexus():
     import h5py
 
@@ -143,23 +166,26 @@ def test_compute_tof_bins_from_nexus():
     assert frequency == pytest.approx(20.0)
 
     _, focus_pos = get_calibration_info(run_date)
-    tof = compute_tof_bins(focus_pos, center_wavelength, frequency)
+    tof = compute_tof_bins(focus_pos)
 
     # one entry per focus group
     assert len(tof.xmin) == len(focus_pos.l2)
     assert len(tof.xdelta) == len(focus_pos.l2)
 
     # equatorial banks (~90°): xdelta ≈ Δθ · cot(45°) = 0.001
-    nptest.assert_allclose(tof.xdelta[0], 0.001001, rtol=1e-3)
-    nptest.assert_allclose(tof.xdelta[1], 0.001001, rtol=1e-3)
+    nptest.assert_allclose(tof.xdelta[0], 0.001001, atol=1e-6)
+    nptest.assert_allclose(tof.xdelta[1], 0.001001, atol=1e-6)
 
     # back-scattering bank (~150°): xdelta ≈ Δθ · cot(75°) ≈ 0.000269
-    nptest.assert_allclose(tof.xdelta[2], 0.000269, rtol=1e-2)
+    nptest.assert_allclose(tof.xdelta[2], 0.000269, atol=1e-6)
 
     # xmin per bank — varies with L2
-    nptest.assert_allclose(tof.xmin[0], 6282.17, rtol=1e-3)
-    nptest.assert_allclose(tof.xmin[2], 6241.62, rtol=1e-3)
+    nptest.assert_allclose(tof.xmin[0], 4997.5, rtol=1e-6)
+    nptest.assert_allclose(tof.xmin[2], 4999.327, rtol=1e-6)
 
     # xmax covers the full frame and exceeds all per-bank xmin
     assert min(tof.xmax) > max(tof.xmin)
-    nptest.assert_allclose(tof.xmax, 58906.44, rtol=1e-3)
+    assert tof.xmax == [70000.0] * len(focus_pos.l2)
+
+    # binning mode is logarithmic
+    assert tof.binning_mode == "Logarithmic"

@@ -2,6 +2,13 @@
 # neutrons_standard injects ${module.root}, which resolves to the tests/ directory
 # in the test environment, so these paths point at the checked-in test fixtures.
 instrument:
-  home: ${module.root}/data/vulcan
+  home: ${module.root}/data
+  data:
+    home: ${module.root}/data
+    file: ${instrument.data.home}/VULCAN_{run}.nxs.h5
   calibration:
     home: ${module.root}/data
+  reduction:
+    # {IPTS} is a runtime template placeholder, not a config substitution.
+    home: ${module.root}/output/IPTS-{IPTS}/shared
+    bin: ${instrument.reduction.home}/binned_data

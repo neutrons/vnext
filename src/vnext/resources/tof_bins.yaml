@@ -1,0 +1,13 @@
+# Time of Flight Binning Parameters for VULCAN, one entry per instrument era.
+#
+# valid_from:    ISO date (YYYY-MM-DD) when this configuration became active.
+# xmin:          Minimum TOF value; either per-bank, or single value for whole instrument
+# xmax:          Maximum TOF value; either per-bank, or single value for whole instrument
+# xdelta:        Bin width for TOF binning; either per-bank, or single value for whole instrument
+# binning_mode:  Either "Linear" or "Logarithmic"
+
+- valid_from: "2025-11-01"
+  xmin: [4997.5, 4997.5, 4997.5, 4999.25, 4999.25, 4997.5, 4997.5, 4997.5, 4997.5]
+  xdelta: [0.001, 0.001, 0.001, 0.0003, 0.0003, 0.001, 0.001, 0.001, 0.001]
+  xmax: [70000.0]
+  binning_mode: "Logarithmic"

@@ -9,17 +9,24 @@ IPTS:
 instrument:
   name: VULCAN
   home: ${IPTS.root}/VULCAN
+  data:
+    # {IPTS} and {run} are runtime template placeholders, not config substitutions
+    home: ${instrument.home}/IPTS-{IPTS}/nexus
+    file: ${instrument.data.home}/VULCAN_{run}.nxs.h5
   calibration:
     home: ${instrument.home}/shared/CALIBRATION
   reduction:
     # {IPTS} is a runtime template placeholder, not a config substitution.
-    home: ${instrument.home}/{IPTS}/shared/VNext
+    home: ${instrument.home}/IPTS-{IPTS}/shared/VNext
+    bin: ${instrument.reduction.home}/binned_data
   startingRunNumber: 1000
 
   nexus:
     native:
       prefix: nexus/VULCAN_
       extension: .nxs.h5
+    start_time_log: /entry/start_time
+    das_logs: /entry/DASlogs
 
   PVLogs:
     rootGroup: /entry/DASlogs

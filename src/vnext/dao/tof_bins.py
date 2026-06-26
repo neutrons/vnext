@@ -1,4 +1,12 @@
+import datetime
 from dataclasses import dataclass
+from functools import cache
+from typing import Literal
+
+BinningMode = Literal["Linear", "Logarithmic"]
+
+TOF_MIN_DEFAULT = 5000.0
+TOF_MAX_DEFAULT = 70000.0
 
 
 @dataclass
@@ -19,6 +27,7 @@ class TofBins:
     xmin: list[float]
     xdelta: list[float]
     xmax: list[float]
+    binning_mode: BinningMode = "Logarithmic"
 
     def __post_init__(self):
         """Validate the input values for TOF bins.
@@ -39,3 +48,22 @@ class TofBins:
                 f"xmax must either be a single value or have the same length as xmin and xdelta "
                 f"(got len(xmin) = {nmin}, len(xmax) = {nmax} and len(xdelta) = {nbin})"
             )
+
+
+@cache  # NOTE: standard cache is sufficient here, since it is always the same dict returned
+def load_tof_bins() -> dict[datetime.datetime, TofBins]:
+    """Load the era-indexed TOF binning references from the bundled YAML."""
+    import yaml  # soft import — only needed here
+    from neutrons_standard.config import Resource
+
+    raw = yaml.safe_load(Resource.read("tof_bins.yaml"))
+
+    return {
+        datetime.datetime.fromisoformat(entry["valid_from"]): TofBins(
+            xmin=entry["xmin"],
+            xdelta=entry["xdelta"],
+            xmax=entry["xmax"],
+            binning_mode=entry.get("binning_mode", "Logarithmic"),
+        )
+        for entry in raw
+    }
