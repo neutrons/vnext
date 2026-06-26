@@ -66,3 +66,18 @@ def get_runs_in_range(ipts: int, runs: int, rune: int = -1) -> dict[int, Path]:
             _log.warning(f"Run {run} does not exist in IPTS {ipts}, skipping.")
 
     return all_runs
+
+
+def get_bins_in_range(ipts: int, runs: int, rune: int = -1) -> dict[int, Path]:
+    # ensure any runs were passed and that they exist in the data directory
+    run_end = rune if rune != -1 else runs
+    runs_range = range(runs, run_end + 1)
+    all_runs = {}
+    for run in runs_range:
+        file_path = Path(Config["instrument.reduction.bin"].format(IPTS=ipts)) / f"{run}.gda"
+        if file_path.exists():
+            all_runs[run] = file_path
+        else:
+            _log.warning(f"Run {run} does not exist in IPTS {ipts}, skipping.")
+
+    return all_runs

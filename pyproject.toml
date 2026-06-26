@@ -209,3 +209,7 @@ line-ending = "auto"
 
 [tool.ty.environment]
 python = ".pixi/envs/default"
+
+[tool.ty.rules]
+# mantid.simpleapi is unresolvable (C++ extension loaded at runtime)
+unresolved-import = "ignore"

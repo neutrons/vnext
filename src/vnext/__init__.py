@@ -3,7 +3,7 @@
 from importlib import metadata
 
 import neutrons_standard
-from mantid.kernel import Property  # ty: ignore[unresolved-import]
+from mantid.kernel import Property
 
 UNSET_FLOAT: float = Property.EMPTY_DBL
 del Property
@@ -14,6 +14,7 @@ del Property
 neutrons_standard.init("vnext")
 from neutrons_standard.config import Config  # noqa: E402, F401
 
+from ._typing import FilePath  # noqa: E402, F401
 from .vnext_protocol import VNEXTBackend  # noqa: E402, F401
 
 __version__ = metadata.version("vnext")

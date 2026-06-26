@@ -58,10 +58,44 @@ class VNEXTBackend(ABC):
         """
 
     @abstractmethod
-    def vnextbin_n(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]: ...
+    def vnextbin_n(
+        self,
+        *,
+        ipts: int,
+        runs: int,
+        rune: int = -1,
+        runv: int = -1,
+        chopruns: int = -1,
+    ) -> dict[str, Any]:
+        """Bin event data and normalize by a vanadium run.
+
+        Args:
+            ipts: IPTS experiment number.
+            runs: Start run number.
+            rune: End run number.
+            runv: Vanadium run number for normalization.
+            chopruns: Chopruns where data are chopped from.
+        """
 
     @abstractmethod
-    def vnextbin_ns(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]: ...
+    def vnextbin_ns(
+        self,
+        *,
+        ipts: int,
+        runs: int,
+        rune: int = -1,
+        runv: int = -1,
+        chopruns: int = -1,
+    ) -> dict[str, Any]:
+        """Bin event data and normalize by a smoothed vanadium run.
+
+        Args:
+            ipts: IPTS experiment number.
+            runs: Start run number.
+            rune: End run number.
+            runv: Vanadium run number for normalization.
+            chopruns: Chopruns where data are chopped from.
+        """
 
     @abstractmethod
     def vnextchop_en(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]: ...
@@ -161,7 +195,20 @@ class VNEXTBackend(ABC):
         """
 
     @abstractmethod
-    def vnextlog(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]: ...
+    def vnextlog(
+        self,
+        *,
+        ipts: int,
+        runs: int,
+        name: str = "",
+    ) -> dict[str, Any]:
+        """Open a run's sample-environment (DASlogs) data from its NeXus file.
+
+        Args:
+            ipts: IPTS experiment number.
+            runs: Run number whose NeXus file is read.
+            name: Name of the DASlog to extract; omit to list available logs.
+        """
 
     @abstractmethod
     def vnextfit(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]: ...
@@ -176,10 +223,42 @@ class VNEXTBackend(ABC):
     def vnextmerge(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]: ...
 
     @abstractmethod
-    def vnextpixel(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]: ...
+    def vnextpixel(
+        self,
+        *,
+        ipts: int,
+        runs: int,
+        runv: int = -1,
+    ) -> dict[str, Any]:
+        """View the per-pixel detector intensity contour for a single run.
+
+        Args:
+            ipts: IPTS experiment number.
+            runs: Run number whose NeXus file is read.
+            runv: Instrument parameter run for normalization.
+        """
 
     @abstractmethod
     def vnextpole(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]: ...
 
     @abstractmethod
-    def vnextsum(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]: ...
+    def vnextsum(
+        self,
+        *,
+        ipts: int,
+        runs: int,
+        rune: int = -1,
+        runlist: list[int] | None = None,
+        runfile: str = "",
+        runv: int = -1,
+    ) -> dict[str, Any]:
+        """Sum (co-add) GSAS histogram files over a set of runs into one file.
+
+        Args:
+            ipts: IPTS experiment number.
+            runs: Start run number (used with rune when no runlist/runfile given).
+            rune: End run number.
+            runlist: Explicit list of run numbers to sum.
+            runfile: Path to a text file of run numbers (whitespace/newline delimited).
+            runv: Vanadium run for normalization.
+        """
