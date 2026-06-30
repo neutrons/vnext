@@ -1,8 +1,7 @@
 from pathlib import Path
 from typing import Any
 
-from vnext import UNSET_FLOAT, Config, VNEXTBackend, plotting
-from vnext.detector import pixel_counts
+from vnext import UNSET_FLOAT, Config, VNEXTBackend, detector, plotting
 from vnext.fileservice import get_bins_in_range
 from vnext.gsas import (
     banks_from_workspace,
@@ -314,7 +313,7 @@ class Backend(VNEXTBackend):
         if not nexus_file.exists():
             raise FileNotFoundError(f"NeXus file not found for run {runs}: {nexus_file}")
 
-        result = {"ipts": ipts, "run": runs, **pixel_counts(nexus_file)}
+        result = {"ipts": ipts, "run": runs, **detector.pixel_counts(nexus_file)}
         plotting.plot_pixel(result, show=True)
         return result
 
