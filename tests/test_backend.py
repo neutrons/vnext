@@ -3,9 +3,25 @@ import shutil
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import matplotlib
+import numpy as np
 import pytest
+from mantid.simpleapi import (
+    AddTimeSeriesLog,
+    CreateSampleWorkspace,
+    CreateWorkspace,
+    DeleteWorkspace,
+    LoadGSS,
+    mtd,
+)
 
+from vnext import Config
 from vnext.backend import Backend
+from vnext.plotting import plot_contour, plot_pattern, plot_pixel
+
+matplotlib.use("Agg")
+
+from vnext.plotting import plot_log
 
 TESTS_DIR = Path(__file__).parent
 IPTS = 36261
@@ -22,8 +38,6 @@ LOG_RUN = 218075
 @pytest.fixture
 def output_dir():
     """Yield the directory vnextbin will write .gda files to."""
-    from vnext import Config
-
     d = Path(Config["instrument.reduction.bin"].format(IPTS=IPTS))
     d.mkdir(parents=True, exist_ok=True)
     yield d
@@ -211,7 +225,6 @@ def test_vnextbin_ns_smooths_vanadium(mantid_norm_mocks):
 @pytest.fixture
 def binned_dirs():
     """Create the binned_data input dir and Summed_GDA output dir, then clean up."""
-    from vnext import Config
 
     binned = Path(Config["instrument.reduction.bin"].format(IPTS=IPTS))
     summed = Path(Config["instrument.reduction.sum"].format(IPTS=IPTS))
@@ -223,10 +236,6 @@ def binned_dirs():
 
 def _bank0_y(gda_path):
     """Load a GSAS file and return the bank-1 intensities as a numpy array."""
-    from mantid.simpleapi import (
-        DeleteWorkspace,
-        LoadGSS,
-    )
 
     ws = LoadGSS(Filename=str(gda_path), OutputWorkspace="_assert_load")
     y = ws.readY(0).copy()
@@ -254,7 +263,6 @@ def test_vnextsum_sums_range(binned_dirs, place_gda):
 
     # Named after the first run, written under Summed_GDA.
     assert Path(result["output"]) == summed / "100.gda"
-    import numpy as np
 
     np.testing.assert_allclose(_bank0_y(result["output"]), _bank0_y(f1) + _bank0_y(f2))
 
@@ -276,7 +284,6 @@ def test_vnextsum_skips_missing_runs(binned_dirs, place_gda):
     result = Backend().vnextsum(ipts=IPTS, runs=300, rune=301)
 
     assert Path(result["output"]) == summed / "301.gda"
-    import numpy as np
 
     np.testing.assert_allclose(_bank0_y(result["output"]), _bank0_y(f1))
 
@@ -308,7 +315,6 @@ def test_vnextlog_lists_logs():
 
 @pytest.mark.usefixtures("mock_plotting")
 def test_vnextlog_named_log_returns_workspace():
-    from mantid.simpleapi import DeleteWorkspace, mtd
 
     result = Backend().vnextlog(ipts=IPTS, runs=LOG_RUN, name="AI1")
     assert result["name"] == "AI1"
@@ -331,7 +337,6 @@ def test_vnextlog_unknown_log_raises():
 
 def test_vnextlog_delegates_to_plotting_layer(mock_plotting):
     """A named log's workspace is handed to the plotting layer (rendering lives there)."""
-    from mantid.simpleapi import DeleteWorkspace
 
     result = Backend().vnextlog(ipts=IPTS, runs=LOG_RUN, name="AI1")
     mock_plotting["log"].assert_called_once()
@@ -346,13 +351,6 @@ def test_vnextlog_delegates_to_plotting_layer(mock_plotting):
 
 
 def test_plot_log_draws_series():
-    import matplotlib
-
-    matplotlib.use("Agg")
-    from mantid.simpleapi import AddTimeSeriesLog, CreateSampleWorkspace, DeleteWorkspace
-
-    from vnext.plotting import plot_log
-
     ws = CreateSampleWorkspace(OutputWorkspace="test_plot_log_ws")
     AddTimeSeriesLog(ws, Name="AI1", Time="2010-01-01T00:00:00", Value=20.0)
     AddTimeSeriesLog(ws, Name="AI1", Time="2010-01-01T00:00:10", Value=21.0)
@@ -426,7 +424,6 @@ def test_vnextview_unsupported_option_raises():
 
 def test_vnextpixel_returns_pixel_data_and_plots(mock_plotting):
     """The run's NeXus events are reduced to per-pixel data and plotted."""
-    import numpy as np
 
     fake = {
         "counts": np.array([1.0, 2.0, 3.0]),
@@ -454,13 +451,6 @@ def test_vnextpixel_runv_raises():
 
 
 def test_plot_pixel_colours_counts():
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import numpy as np
-
-    from vnext.plotting import plot_pixel
-
     pixel = {
         "ipts": IPTS,
         "run": RUN,
@@ -474,13 +464,6 @@ def test_plot_pixel_colours_counts():
 
 
 def test_plot_pattern_draws_each_bank():
-    import matplotlib
-
-    matplotlib.use("Agg")
-    from mantid.simpleapi import CreateWorkspace, DeleteWorkspace
-
-    from vnext.plotting import plot_pattern
-
     # Two spectra = two banks.
     ws = CreateWorkspace(
         DataX=[1.0, 2.0, 3.0, 1.0, 2.0, 3.0],
@@ -498,14 +481,6 @@ def test_plot_pattern_draws_each_bank():
 
 
 def test_plot_contour_one_axes_per_bank():
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import numpy as np
-    from mantid.simpleapi import CreateWorkspace, DeleteWorkspace
-
-    from vnext.plotting import plot_contour
-
     workspaces = []
     for bank in (1, 2):
         ws = CreateWorkspace(

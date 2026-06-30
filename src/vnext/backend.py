@@ -2,12 +2,14 @@ from pathlib import Path
 from typing import Any
 
 from vnext import UNSET_FLOAT, Config, VNEXTBackend, plotting
+from vnext.detector import pixel_counts
 from vnext.fileservice import get_bins_in_range
 from vnext.gsas import (
     banks_from_workspace,
     build_sequential_view,
     pattern_workspace,
     sequential_view_workspaces,
+    sum_gss_files,
 )
 from vnext.nexus import extract_log, load_run_logs
 from vnext.reduction import bin_runs
@@ -305,9 +307,6 @@ class Backend(VNEXTBackend):
         - runs: Run number whose NeXus file is read
         - runv: Instrument parameter run (not yet implemented)"""
 
-        from vnext import plotting
-        from vnext.detector import pixel_counts
-
         if runv != -1:
             raise NotImplementedError("vnextpixel option 'runv' is not yet implemented")
 
@@ -346,8 +345,6 @@ class Backend(VNEXTBackend):
         - runlist: Explicit list of run numbers to sum
         - runfile: Path to a text file of run numbers (whitespace/newline delimited)
         - runv: Vanadium run for normalization (not yet implemented)"""
-
-        from vnext.gsas import sum_gss_files
 
         if runv != -1:
             raise NotImplementedError("Vanadium normalization (runv) is not yet implemented for vnextsum")

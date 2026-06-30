@@ -7,6 +7,11 @@ full VULCAN event file.
 
 import numpy as np
 import pytest
+from mantid.simpleapi import (
+    CreateSampleWorkspace,
+    DeleteWorkspace,
+    mtd,
+)
 
 from vnext.detector import extract_pixel_data
 
@@ -14,17 +19,15 @@ from vnext.detector import extract_pixel_data
 @pytest.fixture
 def sample_event_ws():
     """A small 2-bank event workspace; yields its name and cleans up."""
-    from mantid.simpleapi import (
-        CreateSampleWorkspace,
-        DeleteWorkspace,
-        mtd,
-    )
 
     name = "test_detector_ws"
+    # A single wide bin per pixel mirrors the integrated Workspace2D that
+    # LoadEventAsWorkspace2D yields in production.
     CreateSampleWorkspace(
         WorkspaceType="Event",
         NumBanks=2,
         BankPixelWidth=3,
+        BinWidth=20000,
         OutputWorkspace=name,
     )
     yield name
@@ -59,8 +62,6 @@ def test_extract_pixel_data_angles_in_degrees(sample_event_ws):
 
 
 def test_extract_pixel_data_cleans_up_workspaces(sample_event_ws):
-    from mantid.simpleapi import mtd
-
     extract_pixel_data(sample_event_ws)
     # the intermediate integration / detector workspaces are removed
     assert f"{sample_event_ws}_int" not in mtd

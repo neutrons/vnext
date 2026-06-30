@@ -19,14 +19,15 @@ from __future__ import annotations
 
 from typing import Any
 
+import matplotlib.pyplot as plt
+from mantid import plots  # noqa: F401  (registers the 'mantid' projection)
+
 
 def _mantid_subplots(**kwargs):
     """Return ``(fig, ax)`` (or axes array) using the ``mantid`` projection.
 
     Importing ``mantid.plots`` registers the projection with matplotlib.
     """
-    import matplotlib.pyplot as plt
-    from mantid import plots as _  # noqa: F401  (registers the 'mantid' projection)
 
     subplot_kw = kwargs.pop("subplot_kw", {})
     subplot_kw.setdefault("projection", "mantid")
@@ -42,7 +43,6 @@ def plot_log(workspace, name: str, *, ax=None, show: bool = False, full_time: bo
     itself.  ``full_time`` switches the x-axis from elapsed seconds to absolute
     time.
     """
-    import matplotlib.pyplot as plt
 
     if ax is None:
         _, ax = _mantid_subplots()
@@ -62,7 +62,6 @@ def plot_pattern(workspace, *, ax=None, show: bool = False):
     and bin-centre handling from the workspace.  The figure title is taken from
     the workspace title if one is set.
     """
-    import matplotlib.pyplot as plt
 
     if ax is None:
         _, ax = _mantid_subplots()
@@ -87,7 +86,6 @@ def plot_contour(workspaces, *, show: bool = False):
     axis is left unlabelled to match the VDRIVE convention; intensity is shown
     by the colour bar.  Returns the list of axes drawn.
     """
-    import matplotlib.pyplot as plt
 
     _, axes = _mantid_subplots(ncols=len(workspaces), squeeze=False)
     drawn = []
@@ -114,7 +112,6 @@ def plot_pixel(pixel: dict[str, Any], *, ax=None, show: bool = False):
     territory, not an ``Axes`` primitive).  Expects the dict shape
     ``Backend.vnextpixel`` returns.
     """
-    import matplotlib.pyplot as plt
 
     if ax is None:
         _, ax = plt.subplots()

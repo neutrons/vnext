@@ -24,7 +24,6 @@ def filefinder_mocks():
 @pytest.fixture
 def output_dir():
     """Yield the directory vnextbin will write .gda files to."""
-    from vnext import Config
 
     d = Path(Config["instrument.reduction.bin"].format(IPTS=IPTS))
     d.mkdir(parents=True, exist_ok=True)

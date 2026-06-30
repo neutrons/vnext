@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 import h5py
+from mantid.simpleapi import DeleteWorkspace, LoadEventNexus, mtd  # ty: ignore[unresolved-import]
 
 from vnext import Config, FilePath
 
@@ -36,16 +37,19 @@ def load_run_logs(nexus_file: FilePath, ws_name: str, *, require: str = ""):
     ``mantid`` projection) but skips the heavy event arrays.  The workspace is
     left in the ADS under ``ws_name``.
 
-    If ``require`` names a log that is absent, the workspace is discarded and a
-    ``KeyError`` is raised.
+    When ``require`` names a log, only that log is loaded (via ``AllowList``)
+    alongside ``proton_charge`` — which the log plot references for the
+    first-pulse time — rather than every DASlog.  If the required log is absent,
+    the workspace is discarded and a ``KeyError`` is raised.
     """
-    from mantid.simpleapi import DeleteWorkspace, LoadEventNexus, mtd  # ty: ignore[unresolved-import]
 
+    allow = {"AllowList": f"{require},proton_charge"} if require else {}
     LoadEventNexus(
         Filename=str(nexus_file),
         OutputWorkspace=ws_name,
         MetaDataOnly=True,
         LoadLogs=True,
+        **allow,
     )
     ws = mtd[ws_name]
     if require and not ws.run().hasProperty(require):

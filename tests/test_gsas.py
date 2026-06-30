@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from vnext import Config
 from vnext.gsas import build_sequential_view, read_gsas_banks
 
 IPTS = 36261
@@ -14,7 +15,6 @@ IPTS = 36261
 @pytest.fixture
 def binned_dir():
     """Create a scratch binned_data directory for GSAS fixtures and clean up."""
-    from vnext import Config
 
     d = Path(Config["instrument.reduction.bin"].format(IPTS=IPTS))
     d.mkdir(parents=True, exist_ok=True)

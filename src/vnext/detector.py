@@ -11,42 +11,40 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+from mantid.simpleapi import (
+    DeleteWorkspace,
+    LoadEventAsWorkspace2D,
+    PreprocessDetectorsToMD,
+    mtd,
+)
+
 
 def extract_pixel_data(ws_name: str) -> dict[str, Any]:
-    """Reduce an event workspace to per-pixel counts and scattering angles.
+    """Reduce an integrated event workspace to per-pixel counts and angles.
 
-    Returns ``counts`` (total counts per detector pixel) alongside each pixel's
-    ``two_theta`` and ``azimuthal`` angle in degrees.
+    ``ws_name`` is expected to reference a workspace loaded via
+    ``LoadEventAsWorkspace2D``, which already holds a single integrated bin per
+    detector pixel.  Returns ``counts`` (total counts per detector pixel)
+    alongside each pixel's ``two_theta`` and ``azimuthal`` angle in degrees.
     """
-    import numpy as np
-    from mantid.simpleapi import (
-        DeleteWorkspace,
-        Integration,
-        PreprocessDetectorsToMD,
-    )
 
-    integrated = Integration(InputWorkspace=ws_name, OutputWorkspace=f"{ws_name}_int")
-    counts = integrated.extractY().ravel()
+    counts = mtd[ws_name].extractY().ravel()
 
     detectors = PreprocessDetectorsToMD(InputWorkspace=ws_name, OutputWorkspace=f"{ws_name}_det")
     two_theta = np.degrees(np.asarray(detectors.column("TwoTheta")))
     azimuthal = np.degrees(np.asarray(detectors.column("Azimuthal")))
 
-    DeleteWorkspace(integrated)
     DeleteWorkspace(detectors)
 
     return {"counts": counts, "two_theta": two_theta, "azimuthal": azimuthal}
 
 
 def pixel_counts(nexus_file: Path) -> dict[str, Any]:
-    """Load a run's raw events and return its per-pixel detector data."""
-    from mantid.simpleapi import (
-        DeleteWorkspace,
-        LoadEventNexus,
-    )
-
+    """Load a run's raw events as an integrated Workspace2D and return its
+    per-pixel detector data."""
     ws_name = f"vnextpixel_{nexus_file.stem}"
-    LoadEventNexus(Filename=str(nexus_file), OutputWorkspace=ws_name)
+    LoadEventAsWorkspace2D(Filename=str(nexus_file), OutputWorkspace=ws_name)
     data = extract_pixel_data(ws_name)
     DeleteWorkspace(ws_name)
     return data
