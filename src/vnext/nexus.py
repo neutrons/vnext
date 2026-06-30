@@ -28,6 +28,32 @@ def extract_nexus_metadata(nexus_file: FilePath) -> tuple[datetime.datetime, flo
     return run_date, center_wavelength, frequency
 
 
+def load_run_logs(nexus_file: FilePath, ws_name: str, *, require: str = ""):
+    """Load a run's logs into a Mantid workspace without the event data.
+
+    Uses ``LoadEventNexus(MetaDataOnly=True, LoadLogs=True)`` so the returned
+    workspace carries the run's sample-environment logs (for plotting via the
+    ``mantid`` projection) but skips the heavy event arrays.  The workspace is
+    left in the ADS under ``ws_name``.
+
+    If ``require`` names a log that is absent, the workspace is discarded and a
+    ``KeyError`` is raised.
+    """
+    from mantid.simpleapi import DeleteWorkspace, LoadEventNexus, mtd  # ty: ignore[unresolved-import]
+
+    LoadEventNexus(
+        Filename=str(nexus_file),
+        OutputWorkspace=ws_name,
+        MetaDataOnly=True,
+        LoadLogs=True,
+    )
+    ws = mtd[ws_name]
+    if require and not ws.run().hasProperty(require):
+        DeleteWorkspace(ws_name)
+        raise KeyError(f"Log '{require}' not found in {nexus_file}")
+    return ws
+
+
 def extract_log(nexus_file: FilePath, name: str = "") -> dict[str, Any]:
     if not Path(nexus_file).exists():
         raise FileNotFoundError(f"NeXus file {nexus_file} not found")

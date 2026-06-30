@@ -1,12 +1,18 @@
 """Plotting layer for VNEXT.
 
-Backend methods return plain data (numpy arrays / dicts); this module turns that
-data into figures.  Keeping rendering here — rather than inside ``Backend`` —
-means the data path stays import-light and unit-testable, and the plotting code
-can be exercised (or swapped for a GUI/headless backend) independently.
+Rendering is kept here rather than inside ``Backend`` so the data path stays
+testable and the plotting code can be exercised (or swapped for a headless
+backend) independently.
 
-Each function accepts an optional ``ax`` (to compose into an existing figure) and
-a ``show`` flag, and returns the ``Axes`` it drew on.
+These functions draw Mantid workspaces directly through Mantid's matplotlib
+integration (the ``mantid`` projection), so axis units, bin-edge handling,
+error bars and sample-log slicing come from the workspace itself rather than
+being reconstructed by hand.  See
+https://docs.mantidproject.org/nightly/plotting/index.html.
+
+Each function accepts an optional ``ax`` (to compose into an existing figure)
+and a ``show`` flag, and returns the ``Axes`` it drew on.  A supplied ``ax``
+must already use the ``mantid`` projection.
 """
 
 from __future__ import annotations
@@ -14,48 +20,58 @@ from __future__ import annotations
 from typing import Any
 
 
-def plot_log(log: dict[str, Any], *, ax=None, show: bool = False):
+def _mantid_subplots(**kwargs):
+    """Return ``(fig, ax)`` (or axes array) using the ``mantid`` projection.
+
+    Importing ``mantid.plots`` registers the projection with matplotlib.
+    """
+    import matplotlib.pyplot as plt
+    from mantid import plots as _  # noqa: F401  (registers the 'mantid' projection)
+
+    subplot_kw = kwargs.pop("subplot_kw", {})
+    subplot_kw.setdefault("projection", "mantid")
+    return plt.subplots(subplot_kw=subplot_kw, **kwargs)
+
+
+def plot_log(workspace, name: str, *, ax=None, show: bool = False, full_time: bool = False):
     """Plot a single sample-environment log as a time series.
 
-    Expects the dict shape returned by ``Backend.vnextlog`` for a named log:
-    ``time`` (elapsed seconds), ``value``, and optional ``units``/``time_units``
-    and ``name`` for axis labelling.
+    ``workspace`` is a Mantid workspace carrying the run's logs (e.g. loaded
+    metadata-only via ``LoadEventNexus``).  The log named ``name`` is drawn with
+    Mantid's log-slicing support, so axis labels and units come from the log
+    itself.  ``full_time`` switches the x-axis from elapsed seconds to absolute
+    time.
     """
     import matplotlib.pyplot as plt
 
     if ax is None:
-        _, ax = plt.subplots()
+        _, ax = _mantid_subplots()
 
-    ax.plot(log["time"], log["value"])
-    time_units = log.get("time_units") or "s"
-    ax.set_xlabel(f"time ({time_units})")
-    ylabel = log.get("name", "value")
-    if log.get("units"):
-        ylabel = f"{ylabel} ({log['units']})"
-    ax.set_ylabel(ylabel)
-    ax.set_title(f"IPTS-{log.get('ipts', '?')} run {log.get('run', '?')}: {log.get('name', '')}")
+    ax.plot(workspace, LogName=name, FullTime=full_time)
 
     if show:
         plt.show()
     return ax
 
 
-def plot_pattern(view: dict[str, Any], *, ax=None, show: bool = False):
+def plot_pattern(workspace, *, ax=None, show: bool = False):
     """Plot a single run's GSAS pattern, overlaying each bank.
 
-    Expects the dict shape ``Backend.vnextview`` returns for a single run:
-    ``banks`` is a list of ``{"bank", "x", "y"}``.
+    ``workspace`` is the ``LoadGSS`` workspace; each spectrum is one bank.
+    Drawing through the ``mantid`` projection takes the x unit (TOF / d-spacing)
+    and bin-centre handling from the workspace.  The figure title is taken from
+    the workspace title if one is set.
     """
     import matplotlib.pyplot as plt
 
     if ax is None:
-        _, ax = plt.subplots()
+        _, ax = _mantid_subplots()
 
-    for bank in view["banks"]:
-        ax.plot(bank["x"], bank["y"], label=f"bank {bank['bank']}")
-    ax.set_xlabel("TOF")
-    ax.set_ylabel("intensity")
-    ax.set_title(f"IPTS-{view.get('ipts', '?')} run {view.get('runs', '?')}")
+    for spec in range(workspace.getNumberHistograms()):
+        ax.plot(workspace, specNum=spec + 1, label=f"bank {spec + 1}")
+    title = workspace.getTitle()
+    if title:
+        ax.set_title(title)
     ax.legend()
 
     if show:
@@ -63,11 +79,40 @@ def plot_pattern(view: dict[str, Any], *, ax=None, show: bool = False):
     return ax
 
 
+def plot_contour(workspaces, *, show: bool = False):
+    """Plot sequential-run intensity as a 2-D colour map, one subplot per bank.
+
+    ``workspaces`` is a list of 2-D Mantid workspaces (one per bank), each with
+    runs along the vertical axis.  The x unit comes from the workspace; the run
+    axis is left unlabelled to match the VDRIVE convention; intensity is shown
+    by the colour bar.  Returns the list of axes drawn.
+    """
+    import matplotlib.pyplot as plt
+
+    _, axes = _mantid_subplots(ncols=len(workspaces), squeeze=False)
+    drawn = []
+    for ax, ws in zip(axes[0], workspaces):
+        mesh = ax.pcolormesh(ws)
+        ax.set_ylabel("")
+        title = ws.getTitle()
+        if title:
+            ax.set_title(title)
+        ax.figure.colorbar(mesh, ax=ax, label="intensity")
+        drawn.append(ax)
+
+    if show:
+        plt.show()
+    return drawn
+
+
 def plot_pixel(pixel: dict[str, Any], *, ax=None, show: bool = False):
     """Plot a single run's per-pixel detector counts as a scattering-angle map.
 
-    Expects the dict shape ``Backend.vnextpixel`` returns: ``counts`` coloured
-    over each pixel's ``azimuthal`` / ``two_theta`` angle (degrees).
+    This stays array-based: it scatters ``counts`` over each pixel's
+    ``azimuthal`` / ``two_theta`` angle (degrees), for which Mantid's matplotlib
+    projection has no equivalent (per-detector angle maps are instrument-view
+    territory, not an ``Axes`` primitive).  Expects the dict shape
+    ``Backend.vnextpixel`` returns.
     """
     import matplotlib.pyplot as plt
 
@@ -83,27 +128,3 @@ def plot_pixel(pixel: dict[str, Any], *, ax=None, show: bool = False):
     if show:
         plt.show()
     return ax
-
-
-def plot_contour(view: dict[str, Any], *, show: bool = False):
-    """Plot sequential-run intensity as a 2-D contour, one subplot per bank.
-
-    Expects the dict shape ``Backend.vnextview`` returns for a run range:
-    each bank carries ``x``, ``runs`` and a 2-D ``intensity`` grid (runs x x).
-    Returns the list of axes drawn.
-    """
-    import matplotlib.pyplot as plt
-
-    banks = view["banks"]
-    _, axes = plt.subplots(1, len(banks), squeeze=False)
-    drawn = []
-    for ax, bank in zip(axes[0], banks):
-        ax.contourf(bank["x"], bank["runs"], bank["intensity"])
-        ax.set_xlabel("TOF")
-        ax.set_ylabel("run")
-        ax.set_title(f"bank {bank['bank']}")
-        drawn.append(ax)
-
-    if show:
-        plt.show()
-    return drawn

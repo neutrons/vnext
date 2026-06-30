@@ -10,6 +10,8 @@ from vnext.backend import Backend
 TESTS_DIR = Path(__file__).parent
 IPTS = 36261
 RUN = 260112
+# A run whose NeXus fixture carries real proton-charge pulses
+LOG_RUN = 218075
 
 
 # ---------------------------------------------------------------------------
@@ -298,19 +300,23 @@ def mock_plotting():
 
 def test_vnextlog_lists_logs():
     # Listing mode returns before any plotting, so no plotting mock is needed.
-    result = Backend().vnextlog(ipts=IPTS, runs=RUN)
-    assert result["run"] == RUN
+    result = Backend().vnextlog(ipts=IPTS, runs=LOG_RUN)
+    assert result["run"] == LOG_RUN
     assert "AI1" in result["logs"]
     assert result["logs"] == sorted(result["logs"])
 
 
 @pytest.mark.usefixtures("mock_plotting")
-def test_vnextlog_named_log_returns_series():
-    result = Backend().vnextlog(ipts=IPTS, runs=RUN, name="AI1")
+def test_vnextlog_named_log_returns_workspace():
+    from mantid.simpleapi import DeleteWorkspace, mtd
+
+    result = Backend().vnextlog(ipts=IPTS, runs=LOG_RUN, name="AI1")
     assert result["name"] == "AI1"
-    assert len(result["time"]) == len(result["value"])
-    assert result["units"] == "degC"
-    assert result["time_units"] == "second"
+    assert result["ipts"] == IPTS
+    assert result["run"] == LOG_RUN
+    # The named-log path loads the run's logs into a workspace and hands its name back.
+    assert result["workspace"] in mtd
+    DeleteWorkspace(result["workspace"])
 
 
 def test_vnextlog_missing_run_raises():
@@ -320,14 +326,18 @@ def test_vnextlog_missing_run_raises():
 
 def test_vnextlog_unknown_log_raises():
     with pytest.raises(KeyError):
-        Backend().vnextlog(ipts=IPTS, runs=RUN, name="not_a_real_log")
+        Backend().vnextlog(ipts=IPTS, runs=LOG_RUN, name="not_a_real_log")
 
 
 def test_vnextlog_delegates_to_plotting_layer(mock_plotting):
-    """A named log is handed to the plotting layer (rendering lives there)."""
-    Backend().vnextlog(ipts=IPTS, runs=RUN, name="AI1")
+    """A named log's workspace is handed to the plotting layer (rendering lives there)."""
+    from mantid.simpleapi import DeleteWorkspace
+
+    result = Backend().vnextlog(ipts=IPTS, runs=LOG_RUN, name="AI1")
     mock_plotting["log"].assert_called_once()
-    assert mock_plotting["log"].call_args.args[0]["name"] == "AI1"
+    # plot_log(workspace, name): the log name is the second positional argument.
+    assert mock_plotting["log"].call_args.args[1] == "AI1"
+    DeleteWorkspace(result["workspace"])
 
 
 # ---------------------------------------------------------------------------
@@ -339,23 +349,19 @@ def test_plot_log_draws_series():
     import matplotlib
 
     matplotlib.use("Agg")
-    import numpy as np
+    from mantid.simpleapi import AddTimeSeriesLog, CreateSampleWorkspace, DeleteWorkspace
 
     from vnext.plotting import plot_log
 
-    log = {
-        "ipts": IPTS,
-        "run": RUN,
-        "name": "AI1",
-        "time": np.array([0.0, 1.0, 2.0]),
-        "value": np.array([20.0, 21.0, 22.0]),
-        "units": "degC",
-        "time_units": "second",
-    }
-    ax = plot_log(log, show=False)
+    ws = CreateSampleWorkspace(OutputWorkspace="test_plot_log_ws")
+    AddTimeSeriesLog(ws, Name="AI1", Time="2010-01-01T00:00:00", Value=20.0)
+    AddTimeSeriesLog(ws, Name="AI1", Time="2010-01-01T00:00:10", Value=21.0)
+
+    ax = plot_log(ws, "AI1", show=False)
     assert len(ax.lines) == 1
-    assert ax.get_ylabel() == "AI1 (degC)"
-    assert "second" in ax.get_xlabel()
+    assert "AI1" in ax.get_ylabel()  # ylabel comes from the log itself
+    assert "Time" in ax.get_xlabel()
+    DeleteWorkspace("test_plot_log_ws")
 
 
 # ---------------------------------------------------------------------------
@@ -471,20 +477,24 @@ def test_plot_pattern_draws_each_bank():
     import matplotlib
 
     matplotlib.use("Agg")
-    import numpy as np
+    from mantid.simpleapi import CreateWorkspace, DeleteWorkspace
 
     from vnext.plotting import plot_pattern
 
-    view = {
-        "ipts": IPTS,
-        "runs": 400,
-        "banks": [
-            {"bank": 1, "x": np.array([1.0, 2.0, 3.0]), "y": np.array([10.0, 20.0, 15.0])},
-            {"bank": 2, "x": np.array([1.0, 2.0, 3.0]), "y": np.array([5.0, 8.0, 6.0])},
-        ],
-    }
-    ax = plot_pattern(view, show=False)
+    # Two spectra = two banks.
+    ws = CreateWorkspace(
+        DataX=[1.0, 2.0, 3.0, 1.0, 2.0, 3.0],
+        DataY=[10.0, 20.0, 15.0, 5.0, 8.0, 6.0],
+        NSpec=2,
+        UnitX="TOF",
+        OutputWorkspace="test_plot_pattern_ws",
+    )
+    ws.setTitle("IPTS-1 run 400")
+
+    ax = plot_pattern(ws, show=False)
     assert len(ax.lines) == 2
+    assert ax.get_title() == "IPTS-1 run 400"
+    DeleteWorkspace("test_plot_pattern_ws")
 
 
 def test_plot_contour_one_axes_per_bank():
@@ -492,19 +502,25 @@ def test_plot_contour_one_axes_per_bank():
 
     matplotlib.use("Agg")
     import numpy as np
+    from mantid.simpleapi import CreateWorkspace, DeleteWorkspace
 
     from vnext.plotting import plot_contour
 
-    x = np.array([1.0, 2.0, 3.0])
-    view = {
-        "ipts": IPTS,
-        "runs": 500,
-        "rune": 502,
-        "runs_present": [500, 501, 502],
-        "banks": [
-            {"bank": 1, "x": x, "runs": [500, 501, 502], "intensity": np.random.rand(3, 3)},
-            {"bank": 2, "x": x, "runs": [500, 501, 502], "intensity": np.random.rand(3, 3)},
-        ],
-    }
-    axes = plot_contour(view, show=False)
+    workspaces = []
+    for bank in (1, 2):
+        ws = CreateWorkspace(
+            DataX=np.tile([1.0, 2.0, 3.0], 3),
+            DataY=np.random.rand(9),
+            NSpec=3,
+            UnitX="TOF",
+            VerticalAxisUnit="Label",
+            VerticalAxisValues=["500", "501", "502"],
+            OutputWorkspace=f"test_plot_contour_ws{bank}",
+        )
+        ws.setTitle(f"bank {bank}")
+        workspaces.append(ws)
+
+    axes = plot_contour(workspaces, show=False)
     assert len(axes) == 2
+    for bank in (1, 2):
+        DeleteWorkspace(f"test_plot_contour_ws{bank}")

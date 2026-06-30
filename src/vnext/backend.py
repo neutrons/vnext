@@ -3,8 +3,13 @@ from typing import Any
 
 from vnext import UNSET_FLOAT, Config, VNEXTBackend, plotting
 from vnext.fileservice import get_bins_in_range
-from vnext.gsas import build_sequential_view, read_gsas_banks
-from vnext.nexus import extract_log
+from vnext.gsas import (
+    banks_from_workspace,
+    build_sequential_view,
+    pattern_workspace,
+    sequential_view_workspaces,
+)
+from vnext.nexus import extract_log, load_run_logs
 from vnext.reduction import bin_runs
 
 # vnextview options that are accepted for VDRIVE compatibility but not yet
@@ -65,13 +70,15 @@ class Backend(VNEXTBackend):
             bins = get_bins_in_range(ipts, runs)
             if not bins:
                 raise FileNotFoundError(f"GSAS file not found for run {runs} in IPTS {ipts}")
-            result = {"ipts": ipts, "runs": runs, "banks": read_gsas_banks(bins[runs])}
-            plotting.plot_pattern(result, show=True)
+            with pattern_workspace(bins[runs], title=f"IPTS-{ipts} run {runs}") as ws:
+                result = {"ipts": ipts, "runs": runs, "banks": banks_from_workspace(ws)}
+                plotting.plot_pattern(ws, show=True)
             return result
 
         # Sequential patterns: stack each present run's intensity per bank into a 2-D grid.
         result = build_sequential_view(ipts, runs, rune)
-        plotting.plot_contour(result, show=True)
+        with sequential_view_workspaces(result) as workspaces:
+            plotting.plot_contour(workspaces, show=True)
         return result
 
     def vnextbin(
@@ -260,12 +267,15 @@ class Backend(VNEXTBackend):
         if not nexus_file.exists():
             raise FileNotFoundError(f"NeXus file not found for run {runs}: {nexus_file}")
 
-        log_info = extract_log(nexus_file, name)
+        # Listing mode: read names straight from the file (no workspace needed).
+        if not name:
+            return {"ipts": ipts, "run": runs, **extract_log(nexus_file)}
 
-        result = {"ipts": ipts, "run": runs, **log_info}
-        if name:
-            plotting.plot_log(result, show=True)
-        return result
+        # Named log: load the run's logs into a workspace and plot it directly.
+        ws_name = f"vnextlog_{runs}_{name}"
+        workspace = load_run_logs(nexus_file, ws_name, require=name)
+        plotting.plot_log(workspace, name, show=True)
+        return {"ipts": ipts, "run": runs, "name": name, "workspace": ws_name}
 
     def vnextfit(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
         return {"name": "vnextfit", "ipts": ipts, **kwargs}

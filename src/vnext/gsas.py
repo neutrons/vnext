@@ -7,12 +7,14 @@ Kept out of ``backend.py`` so the backend methods stay thin and the Mantid
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 from mantid.api import MatrixWorkspace
 from mantid.simpleapi import (
+    CreateWorkspace,
     DeleteWorkspace,
     LoadGSS,
     Plus,
@@ -47,13 +49,12 @@ def save_gss(ws_name: str, output_file: FilePath) -> str:
     return str(output_file)
 
 
-def read_gsas_banks(gda_file: FilePath) -> list[dict[str, Any]]:
-    """Load a GSAS file and return per-bank centre-x / intensity arrays.
+def banks_from_workspace(ws: MatrixWorkspace) -> list[dict[str, Any]]:
+    """Extract per-bank centre-x / intensity arrays from a loaded GSAS workspace.
 
     Each entry is ``{"bank": <1-based id>, "x": <bin centres>, "y": <intensity>}``.
+    The workspace is left intact (the caller owns its lifecycle).
     """
-    ws_name = f"vnextview_{Path(gda_file).stem}"
-    ws = load_gss(gda_file, ws_name)
     banks = []
     for spec in range(ws.getNumberHistograms()):
         x = ws.readX(spec)
@@ -61,8 +62,71 @@ def read_gsas_banks(gda_file: FilePath) -> list[dict[str, Any]]:
         # GSAS histograms carry bin edges; use centres so x and y align.
         centres = 0.5 * (x[:-1] + x[1:]) if len(x) == len(y) + 1 else x.copy()
         banks.append({"bank": spec + 1, "x": np.asarray(centres), "y": y.copy()})
+    return banks
+
+
+def read_gsas_banks(gda_file: FilePath) -> list[dict[str, Any]]:
+    """Load a GSAS file and return its per-bank centre-x / intensity arrays."""
+    ws_name = f"vnextview_{Path(gda_file).stem}"
+    ws = load_gss(gda_file, ws_name)
+    banks = banks_from_workspace(ws)
     DeleteWorkspace(ws_name)
     return banks
+
+
+@contextmanager
+def pattern_workspace(gda_file: FilePath, *, title: str = ""):
+    """Load a single GSAS file as a workspace for plotting, deleting it on exit.
+
+    Yields the ``LoadGSS`` workspace (one spectrum per bank) so the plotting
+    layer can draw it through the ``mantid`` projection.  An optional ``title``
+    is stamped on the workspace for use as the plot title.
+    """
+    ws_name = f"vnextview_{Path(gda_file).stem}"
+    ws = load_gss(gda_file, ws_name)
+    if title:
+        ws.setTitle(title)
+    try:
+        yield ws
+    finally:
+        if ws_name in mtd:
+            DeleteWorkspace(ws_name)
+
+
+@contextmanager
+def sequential_view_workspaces(view: dict[str, Any]):
+    """Build one 2-D workspace per bank from a sequential view, deleting on exit.
+
+    ``view`` is the dict returned by :func:`build_sequential_view`.  Each bank's
+    ``intensity`` grid (runs x x) becomes a workspace with one spectrum per run
+    and the run numbers on a ``Label`` vertical axis, ready for ``pcolormesh``.
+    Yields the list of workspaces.
+    """
+    runs = [str(r) for r in view["runs_present"]]
+    names = []
+    workspaces = []
+    try:
+        for bank in view["banks"]:
+            ws_name = f"vnextview_seq_bank{bank['bank']}"
+            x = np.asarray(bank["x"], dtype=float)
+            intensity = np.asarray(bank["intensity"], dtype=float)
+            ws = CreateWorkspace(
+                DataX=np.tile(x, len(runs)),
+                DataY=intensity.ravel(),
+                NSpec=len(runs),
+                UnitX="TOF",
+                VerticalAxisUnit="Label",
+                VerticalAxisValues=runs,
+                OutputWorkspace=ws_name,
+            )
+            ws.setTitle(f"bank {bank['bank']}")
+            names.append(ws_name)
+            workspaces.append(ws)
+        yield workspaces
+    finally:
+        for ws_name in names:
+            if ws_name in mtd:
+                DeleteWorkspace(ws_name)
 
 
 def build_sequential_view(ipts: int, runs: int, rune: int) -> dict[str, Any]:

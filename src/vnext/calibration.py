@@ -105,14 +105,13 @@ def get_tof_bins(date_aquired: datetime.datetime) -> TofBins:
 
     The binning will be returned as a TofBins object
     """
-    tof_era = _bisect_era(TOF_BIN_LIST, date_aquired)
-    _log.debug(f"Using TOF binning era {tof_era} for acquisition date {date_aquired}")
-    tof_bins = TOF_BIN_LIST[tof_era]
-    if not isinstance(tof_bins, TofBins):
-        raise TypeError(
-            f"TOF binning for era {tof_era} is a reference and must be "
-            "resolved to inline values in tof_bins.yaml before use"
-        )
+    try:
+        tof_era = _bisect_era(TOF_BIN_LIST, date_aquired)
+        _log.debug(f"Using TOF binning era {tof_era} for acquisition date {date_aquired}")
+        tof_bins = TOF_BIN_LIST[tof_era]
+    except ValueError:
+        focus = get_calibration_info(date_aquired)[1]
+        tof_bins = compute_tof_bins(focus)
     return tof_bins
 
 
