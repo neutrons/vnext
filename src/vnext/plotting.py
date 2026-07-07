@@ -17,10 +17,15 @@ must already use the ``mantid`` projection.
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 import matplotlib.pyplot as plt
 from mantid import plots  # noqa: F401  (registers the 'mantid' projection)
+from matplotlib.colors import LogNorm
+
+# plot_contour lays banks out in a grid this many subplots wide.
+CONTOUR_GRID_NCOLS = 3
 
 
 def _mantid_subplots(**kwargs):
@@ -83,20 +88,53 @@ def plot_contour(workspaces, *, show: bool = False):
 
     ``workspaces`` is a list of 2-D Mantid workspaces (one per bank), each with
     runs along the vertical axis.  The x unit comes from the workspace; the run
-    axis is left unlabelled to match the VDRIVE convention; intensity is shown
-    by the colour bar.  Returns the list of axes drawn.
+    axis is ticked with the run numbers but carries no axis label, matching the
+    VDRIVE convention; intensity is shown by the colour bar.  Banks are laid out in a grid ``CONTOUR_GRID_NCOLS``
+    wide.  Intensity is colour-mapped on a log scale (diffraction peaks span
+    orders of magnitude, so a linear scale washes out to near-uniform blocks);
+    banks with no positive counts fall back to a linear scale and are flagged
+    "(no data)".  Returns the list of axes drawn.
     """
 
-    _, axes = _mantid_subplots(ncols=len(workspaces), squeeze=False)
+    ncols = min(CONTOUR_GRID_NCOLS, len(workspaces))
+    nrows = math.ceil(len(workspaces) / ncols)
+    fig, axes = _mantid_subplots(
+        nrows=nrows,
+        ncols=ncols,
+        squeeze=False,
+        figsize=(4.0 * ncols, 3.0 * nrows),
+        layout="constrained",
+    )
+    flat = axes.ravel()
     drawn = []
-    for ax, ws in zip(axes[0], workspaces):
-        mesh = ax.pcolormesh(ws)
-        ax.set_ylabel("")
+    for ax, ws in zip(flat, workspaces):
         title = ws.getTitle()
+        intensity = ws.extractY()
+        positive = intensity[intensity > 0]
+        # Mantid's pcolormesh inspects the norm kwarg if present, so only pass
+        # it when there is a log scale to apply.
+        mesh_kwargs = {}
+        if positive.size:
+            mesh_kwargs["norm"] = LogNorm(vmin=positive.min(), vmax=positive.max())
+        else:
+            title = f"{title} (no data)" if title else "(no data)"
+        mesh = ax.pcolormesh(ws, **mesh_kwargs)
+        ax.set_ylabel("")
+        # A text vertical axis carries the run numbers, but Mantid places the
+        # rows at indices 0..n-1 and leaves the ticks as row coordinates, so
+        # relabel them with the run numbers (thinned to stay readable).
+        vertical_axis = ws.getAxis(1)
+        if vertical_axis.isText():
+            n_runs = vertical_axis.length()
+            step = max(1, math.ceil(n_runs / 10))
+            ax.set_yticks(range(0, n_runs, step))
+            ax.set_yticklabels([vertical_axis.label(j) for j in range(0, n_runs, step)])
         if title:
             ax.set_title(title)
-        ax.figure.colorbar(mesh, ax=ax, label="intensity")
+        fig.colorbar(mesh, ax=ax, label="intensity")
         drawn.append(ax)
+    for ax in flat[len(workspaces) :]:
+        fig.delaxes(ax)
 
     if show:
         plt.show()

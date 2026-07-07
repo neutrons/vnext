@@ -56,7 +56,7 @@ def mantid_mocks():
         patch("vnext.reduction.DeleteWorkspace"),
         patch("vnext.reduction.mtd", mock_mtd),
     ):
-        yield mock_align, mock_save
+        yield mock_align, mock_save, mock_mtd
 
 
 # ---------------------------------------------------------------------------
@@ -108,22 +108,22 @@ def test_vnextbin_no_tof_raises():
 
 @pytest.mark.usefixtures("output_dir")
 def test_vnextbin_calls_align_and_focus(mantid_mocks):
-    mock_align, _ = mantid_mocks
+    mock_align, _, mock_mtd = mantid_mocks
 
     Backend().vnextbin(ipts=IPTS, runs=RUN)
 
     mock_align.assert_called_once()
+    mock_mtd.unique_name.assert_called_once_with(prefix=f"__VULCAN_{RUN}")
     kwargs = mock_align.call_args.kwargs
     assert str(RUN) in kwargs["Filename"]
     assert kwargs["BinningUnits"] == "TOF"
-    assert kwargs["OutputWorkspace"] == f"VULCAN_{RUN}"
     assert "CalFileName" in kwargs
     assert kwargs["L1"] == pytest.approx(43.755, rel=1e-3)
 
 
 @pytest.mark.usefixtures("output_dir")
 def test_vnextbin_calls_save_gss(mantid_mocks):
-    _, mock_save = mantid_mocks
+    _, mock_save, _ = mantid_mocks
 
     Backend().vnextbin(ipts=IPTS, runs=RUN)
 
@@ -148,7 +148,7 @@ def test_vnextbin_output_path():
 def test_vnextbin_run_range(mantid_mocks):
     """A range covering only one real run should call AlignAndFocusPowderSlim
     once and return the single .gda path (not the directory)."""
-    mock_align, _ = mantid_mocks
+    mock_align, _, _ = mantid_mocks
     # RUN exists; RUN+1 through RUN+4 do not
     result = Backend().vnextbin(ipts=IPTS, runs=RUN, rune=RUN + 4)
 
@@ -373,11 +373,8 @@ def test_vnextview_single_pattern(binned_dirs, mock_plotting, place_gda):
 
     result = Backend().vnextview(ipts=IPTS, runs=400)
 
+    assert result["ipts"] == IPTS
     assert result["runs"] == 400
-    assert len(result["banks"]) == 2
-    bank = result["banks"][0]
-    assert bank["bank"] == 1
-    assert len(bank["x"]) == len(bank["y"])  # centres align with intensities
     mock_plotting["pattern"].assert_called_once()
 
 
@@ -390,11 +387,10 @@ def test_vnextview_sequential_contour(binned_dirs, mock_plotting, place_gda):
     result = Backend().vnextview(ipts=IPTS, runs=500, rune=502)
 
     assert result["runs_present"] == [500, 501, 502]
-    bank = result["banks"][0]
-    # intensity grid is (n_runs x n_xbins)
-    assert bank["intensity"].shape[0] == 3
-    assert bank["intensity"].shape[1] == len(bank["x"])
+    # one 2-D workspace per bank is handed to the contour plotter
     mock_plotting["contour"].assert_called_once()
+    (workspaces,) = mock_plotting["contour"].call_args.args
+    assert len(workspaces) == 2
 
 
 def test_vnextview_skips_missing_in_range(binned_dirs, mock_plotting, place_gda):

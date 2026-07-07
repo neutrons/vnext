@@ -43,7 +43,7 @@ def extract_pixel_data(ws_name: str) -> dict[str, Any]:
 def pixel_counts(nexus_file: Path) -> dict[str, Any]:
     """Load a run's raw events as an integrated Workspace2D and return its
     per-pixel detector data."""
-    ws_name = mtd.unique_hidden_name(prefix="vnextpixl")
+    ws_name = mtd.unique_name(prefix="__vnextpixl")
     # Integrate all events into a single TOF bin per pixel.  The X-bin value is
     # irrelevant for the detector contour, so set it explicitly rather than
     # reading the default 'wavelength' log, which VULCAN files do not carry.

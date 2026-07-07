@@ -1,11 +1,11 @@
 from pathlib import Path
 from typing import Any
 
+from mantid.simpleapi import mtd
+
 from vnext import UNSET_FLOAT, Config, VNEXTBackend, detector, plotting
 from vnext.fileservice import get_bins_in_range
 from vnext.gsas import (
-    banks_from_workspace,
-    build_sequential_view,
     pattern_workspace,
     sequential_view_workspaces,
     sum_gss_files,
@@ -72,15 +72,14 @@ class Backend(VNEXTBackend):
             if not bins:
                 raise FileNotFoundError(f"GSAS file not found for run {runs} in IPTS {ipts}")
             with pattern_workspace(bins[runs], title=f"IPTS-{ipts} run {runs}") as ws:
-                result = {"ipts": ipts, "runs": runs, "banks": banks_from_workspace(ws)}
+                result = {"ipts": ipts, "runs": runs}
                 plotting.plot_pattern(ws, show=True)
             return result
 
-        # Sequential patterns: stack each present run's intensity per bank into a 2-D grid.
-        result = build_sequential_view(ipts, runs, rune)
-        with sequential_view_workspaces(result) as workspaces:
+        # Sequential patterns: stack each present run's spectrum per bank into a 2-D workspace.
+        with sequential_view_workspaces(ipts, runs, rune) as (runs_present, workspaces):
             plotting.plot_contour(workspaces, show=True)
-        return result
+        return {"ipts": ipts, "runs_present": runs_present}
 
     def vnextbin(
         self,
@@ -273,7 +272,7 @@ class Backend(VNEXTBackend):
             return {"ipts": ipts, "run": runs, **extract_log(nexus_file)}
 
         # Named log: load the run's logs into a workspace and plot it directly.
-        ws_name = f"vnextlog_{runs}_{name}"
+        ws_name = mtd.unique_name(prefix=f"__vnextlog_{runs}_{name}")
         workspace = load_run_logs(nexus_file, ws_name, require=name)
         plotting.plot_log(workspace, name, show=True)
         return {"ipts": ipts, "run": runs, "name": name, "workspace": ws_name}

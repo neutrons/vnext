@@ -11,11 +11,11 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-from mantid.api import MatrixWorkspace
+from mantid.api import MatrixWorkspace, TextAxis
 from mantid.simpleapi import (
-    CreateWorkspace,
+    ConjoinWorkspaces,
     DeleteWorkspace,
+    ExtractSingleSpectrum,
     LoadGSS,
     Plus,
     SaveGSS,
@@ -49,31 +49,6 @@ def save_gss(ws_name: str, output_file: FilePath) -> str:
     return str(output_file)
 
 
-def banks_from_workspace(ws: MatrixWorkspace) -> list[dict[str, Any]]:
-    """Extract per-bank centre-x / intensity arrays from a loaded GSAS workspace.
-
-    Each entry is ``{"bank": <1-based id>, "x": <bin centres>, "y": <intensity>}``.
-    The workspace is left intact (the caller owns its lifecycle).
-    """
-    banks = []
-    for spec in range(ws.getNumberHistograms()):
-        x = ws.readX(spec)
-        y = ws.readY(spec)
-        # GSAS histograms carry bin edges; use centres so x and y align.
-        centres = 0.5 * (x[:-1] + x[1:]) if len(x) == len(y) + 1 else x.copy()
-        banks.append({"bank": spec + 1, "x": np.asarray(centres), "y": y.copy()})
-    return banks
-
-
-def read_gsas_banks(gda_file: FilePath) -> list[dict[str, Any]]:
-    """Load a GSAS file and return its per-bank centre-x / intensity arrays."""
-    ws_name = f"vnextview_{Path(gda_file).stem}"
-    ws = load_gss(gda_file, ws_name)
-    banks = banks_from_workspace(ws)
-    DeleteWorkspace(ws_name)
-    return banks
-
-
 @contextmanager
 def pattern_workspace(gda_file: FilePath, *, title: str = ""):
     """Load a single GSAS file as a workspace for plotting, deleting it on exit.
@@ -82,7 +57,7 @@ def pattern_workspace(gda_file: FilePath, *, title: str = ""):
     layer can draw it through the ``mantid`` projection.  An optional ``title``
     is stamped on the workspace for use as the plot title.
     """
-    ws_name = f"vnextview_{Path(gda_file).stem}"
+    ws_name = mtd.unique_name(prefix=f"__vnextview_{Path(gda_file).stem}")
     ws = load_gss(gda_file, ws_name)
     if title:
         ws.setTitle(title)
@@ -94,47 +69,15 @@ def pattern_workspace(gda_file: FilePath, *, title: str = ""):
 
 
 @contextmanager
-def sequential_view_workspaces(view: dict[str, Any]):
-    """Build one 2-D workspace per bank from a sequential view, deleting on exit.
+def sequential_view_workspaces(ipts: int, runs: int, rune: int):
+    """Build one 2-D workspace per bank over a run range, deleting on exit.
 
-    ``view`` is the dict returned by :func:`build_sequential_view`.  Each bank's
-    ``intensity`` grid (runs x x) becomes a workspace with one spectrum per run
-    and the run numbers on a ``Label`` vertical axis, ready for ``pcolormesh``.
-    Yields the list of workspaces.
-    """
-    runs = [str(r) for r in view["runs_present"]]
-    names = []
-    workspaces = []
-    try:
-        for bank in view["banks"]:
-            ws_name = f"vnextview_seq_bank{bank['bank']}"
-            x = np.asarray(bank["x"], dtype=float)
-            intensity = np.asarray(bank["intensity"], dtype=float)
-            ws = CreateWorkspace(
-                DataX=np.tile(x, len(runs)),
-                DataY=intensity.ravel(),
-                NSpec=len(runs),
-                UnitX="TOF",
-                VerticalAxisUnit="Label",
-                VerticalAxisValues=runs,
-                OutputWorkspace=ws_name,
-            )
-            ws.setTitle(f"bank {bank['bank']}")
-            names.append(ws_name)
-            workspaces.append(ws)
-        yield workspaces
-    finally:
-        for ws_name in names:
-            if ws_name in mtd:
-                DeleteWorkspace(ws_name)
-
-
-def build_sequential_view(ipts: int, runs: int, rune: int) -> dict[str, Any]:
-    """Assemble sequential-view data: per-bank 2-D intensity grids over a run range.
-
-    Missing runs in the range are skipped.  Each bank carries the shared ``x``
-    axis, the list of runs present, and an ``intensity`` grid of shape
-    ``(n_runs, n_xbins)``.
+    Each present run's GSAS file is loaded and its banks split out with
+    ``ExtractSingleSpectrum``; the per-run single-bank workspaces are stacked
+    with ``ConjoinWorkspaces`` so each bank becomes one workspace with one
+    spectrum per run.  Missing runs in the range are skipped.  The run numbers
+    go on a text vertical axis, ready for ``pcolormesh``.  Yields
+    ``(runs_present, workspaces)``.
     """
 
     run_files = get_bins_in_range(ipts, runs, rune)
@@ -142,14 +85,41 @@ def build_sequential_view(ipts: int, runs: int, rune: int) -> dict[str, Any]:
     if not runs_present:
         raise FileNotFoundError(f"No GSAS files found for runs {runs}-{rune} in IPTS {ipts}")
 
-    per_run = {r: read_gsas_banks(run_files[r]) for r in runs_present}
-    first = per_run[runs_present[0]]
-    banks = []
-    for i, bank in enumerate(first):
-        intensity = np.vstack([per_run[r][i]["y"] for r in runs_present])
-        banks.append({"bank": bank["bank"], "x": bank["x"], "runs": runs_present, "intensity": intensity})
+    bank_names: list[str] = []
+    run_ws_name = ""
+    spectrum_name = ""
+    try:
+        for run in runs_present:
+            run_ws_name = mtd.unique_name(prefix=f"__vnextview_seq_{run}")
+            run_ws = load_gss(run_files[run], run_ws_name)
+            if not bank_names:
+                # First run: each extracted bank spectrum seeds a bank workspace.
+                bank_names = [f"vnextview_seq_bank{i + 1}" for i in range(run_ws.getNumberHistograms())]
+                for i, bank_name in enumerate(bank_names):
+                    ExtractSingleSpectrum(InputWorkspace=run_ws_name, WorkspaceIndex=i, OutputWorkspace=bank_name)
+            else:
+                for i, bank_name in enumerate(bank_names):
+                    spectrum_name = mtd.unique_name(prefix=f"__vnextview_seq_{run}_bank{i + 1}")
+                    ExtractSingleSpectrum(InputWorkspace=run_ws_name, WorkspaceIndex=i, OutputWorkspace=spectrum_name)
+                    # Appends the spectrum to the bank workspace and removes the
+                    # second workspace from the ADS.
+                    ConjoinWorkspaces(InputWorkspace1=bank_name, InputWorkspace2=spectrum_name, CheckOverlapping=False)
+            DeleteWorkspace(run_ws_name)
 
-    return {"ipts": ipts, "runs": runs, "rune": rune, "runs_present": runs_present, "banks": banks}
+        workspaces = []
+        for i, bank_name in enumerate(bank_names):
+            ws = mtd[bank_name]
+            axis = TextAxis.create(len(runs_present))
+            for j, run in enumerate(runs_present):
+                axis.setLabel(j, str(run))
+            ws.replaceAxis(1, axis)
+            ws.setTitle(f"bank {i + 1}")
+            workspaces.append(ws)
+        yield runs_present, workspaces
+    finally:
+        for ws_name in (run_ws_name, spectrum_name, *bank_names):
+            if ws_name and ws_name in mtd:
+                DeleteWorkspace(ws_name)
 
 
 def sum_gss_files(
@@ -200,7 +170,7 @@ def sum_gss_files(
             first_run = run
             load_gss(bin_file, sum_ws)
         else:
-            load_ws = f"vnext_sum_{run}"
+            load_ws = mtd.unique_name(prefix=f"__vnext_sum_{run}")
             load_gss(bin_file, load_ws)
             Plus(LHSWorkspace=sum_ws, RHSWorkspace=load_ws, OutputWorkspace=sum_ws)
             DeleteWorkspace(load_ws)

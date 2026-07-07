@@ -5,9 +5,10 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from mantid.simpleapi import mtd
 
 from vnext import Config
-from vnext.gsas import build_sequential_view, read_gsas_banks
+from vnext.gsas import sequential_view_workspaces
 
 IPTS = 36261
 
@@ -23,78 +24,66 @@ def binned_dir():
 
 
 # ---------------------------------------------------------------------------
-# read_gsas_banks
+# sequential_view_workspaces
 # ---------------------------------------------------------------------------
 
 
-def test_read_gsas_banks_returns_two_banks(binned_dir, place_gda):
-    gda = place_gda(1, binned_dir / "100.gda")
-    banks = read_gsas_banks(gda)
-
-    assert [b["bank"] for b in banks] == [1, 2]
-
-
-def test_read_gsas_banks_x_centres_align_with_y(binned_dir, place_gda):
-    """GSAS files store bin edges; the reader returns centres so x and y align."""
-    gda = place_gda(1, binned_dir / "101.gda")
-    banks = read_gsas_banks(gda)
-
-    for bank in banks:
-        assert len(bank["x"]) == len(bank["y"])
-        assert isinstance(bank["x"], np.ndarray)
-        assert isinstance(bank["y"], np.ndarray)
-
-
-def test_read_gsas_banks_scale_reflected_in_intensity(binned_dir, place_gda):
-    """The scale=2 fixture has exactly twice the scale=1 intensities."""
-    one = read_gsas_banks(place_gda(1, binned_dir / "102.gda"))
-    two = read_gsas_banks(place_gda(2, binned_dir / "103.gda"))
-
-    np.testing.assert_allclose(two[0]["y"], 2.0 * one[0]["y"])
-
-
-# ---------------------------------------------------------------------------
-# build_sequential_view
-# ---------------------------------------------------------------------------
-
-
-def test_build_sequential_view_grid_shape(binned_dir, place_gda):
+def test_sequential_view_one_workspace_per_bank(binned_dir, place_gda):
     place_gda(1, binned_dir / "200.gda")
     place_gda(2, binned_dir / "201.gda")
     place_gda(3, binned_dir / "202.gda")
 
-    result = build_sequential_view(IPTS, 200, 202)
-
-    assert result["ipts"] == IPTS
-    assert result["runs_present"] == [200, 201, 202]
-    assert [b["bank"] for b in result["banks"]] == [1, 2]
-    bank = result["banks"][0]
-    # intensity grid is (n_runs x n_xbins) and shares the bank x axis
-    assert bank["intensity"].shape == (3, len(bank["x"]))
+    with sequential_view_workspaces(IPTS, 200, 202) as (runs_present, workspaces):
+        assert runs_present == [200, 201, 202]
+        assert [ws.getTitle() for ws in workspaces] == ["bank 1", "bank 2"]
+        for ws in workspaces:
+            # one spectrum per run, all sharing the file's x binning
+            assert ws.getNumberHistograms() == 3
 
 
-def test_build_sequential_view_rows_match_per_run_intensity(binned_dir, place_gda):
-    """Each grid row is the corresponding run's bank-1 intensity."""
+def test_sequential_view_run_axis_labels(binned_dir, place_gda):
+    place_gda(1, binned_dir / "250.gda")
+    place_gda(2, binned_dir / "251.gda")
+
+    with sequential_view_workspaces(IPTS, 250, 251) as (_, workspaces):
+        axis = workspaces[0].getAxis(1)
+        assert [axis.label(i) for i in range(axis.length())] == ["250", "251"]
+
+
+def test_sequential_view_rows_match_per_run_intensity(binned_dir, place_gda):
+    """Each spectrum is the corresponding run's bank intensity."""
     place_gda(1, binned_dir / "300.gda")
     place_gda(2, binned_dir / "301.gda")
 
-    result = build_sequential_view(IPTS, 300, 301)
-    grid = result["banks"][0]["intensity"]
-    # scale=2 row should be twice the scale=1 row
-    np.testing.assert_allclose(grid[1], 2.0 * grid[0])
+    with sequential_view_workspaces(IPTS, 300, 301) as (_, workspaces):
+        bank1 = workspaces[0]
+        # scale=2 run should be twice the scale=1 run
+        np.testing.assert_allclose(bank1.readY(1), 2.0 * bank1.readY(0))
 
 
-def test_build_sequential_view_skips_missing_runs(binned_dir, place_gda):
+def test_sequential_view_skips_missing_runs(binned_dir, place_gda):
     place_gda(1, binned_dir / "400.gda")  # 401 missing
     place_gda(2, binned_dir / "402.gda")
 
-    result = build_sequential_view(IPTS, 400, 402)
+    with sequential_view_workspaces(IPTS, 400, 402) as (runs_present, workspaces):
+        assert runs_present == [400, 402]
+        assert workspaces[0].getNumberHistograms() == 2
 
-    assert result["runs_present"] == [400, 402]
-    assert result["banks"][0]["intensity"].shape[0] == 2
+
+def test_sequential_view_cleans_up_workspaces(binned_dir, place_gda):
+    place_gda(1, binned_dir / "500.gda")
+    place_gda(2, binned_dir / "501.gda")
+
+    with sequential_view_workspaces(IPTS, 500, 501) as (_, workspaces):
+        names = [ws.name() for ws in workspaces]
+        assert all(name in mtd for name in names)
+    assert not any(name in mtd for name in names)
+    # no leftover intermediate (run / spectrum) workspaces either
+    assert not any(name.startswith("__vnextview_seq") for name in mtd.getObjectNames())
 
 
 @pytest.mark.usefixtures("binned_dir")
-def test_build_sequential_view_no_files_raises():
+def test_sequential_view_no_files_raises():
     with pytest.raises(FileNotFoundError):
-        build_sequential_view(IPTS, 900, 905)
+        with sequential_view_workspaces(IPTS, 900, 905):
+            pass

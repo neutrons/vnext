@@ -80,7 +80,7 @@ def divide_by_vanadium(sample_ws: str, vanadium_ws: str) -> None:
     even when the two runs were reduced with slightly different TOF binning.
     """
 
-    aligned = f"{vanadium_ws}_aligned"
+    aligned = mtd.unique_name(prefix=f"__{vanadium_ws}_aligned")
     RebinToWorkspace(WorkspaceToRebin=vanadium_ws, WorkspaceToMatch=sample_ws, OutputWorkspace=aligned)
     Divide(LHSWorkspace=sample_ws, RHSWorkspace=aligned, OutputWorkspace=sample_ws)
     if aligned in mtd:
@@ -104,7 +104,7 @@ def bin_runs(ipts: int, runs: int, rune: int, *, runv: int = -1, smooth: bool = 
         vanadium_file = Path(Config["instrument.data.file"].format(IPTS=ipts, run=runv))
         if not vanadium_file.exists():
             raise FileNotFoundError(f"Vanadium NeXus file not found for run {runv}: {vanadium_file}")
-        vanadium_ws = focus_vanadium(vanadium_file, f"VULCAN_van_{runv}", smooth=smooth)
+        vanadium_ws = focus_vanadium(vanadium_file, mtd.unique_name(prefix=f"__VULCAN_van_{runv}"), smooth=smooth)
 
     all_runs = get_runs_in_range(ipts, runs, rune)
     if len(all_runs) == 0:
@@ -113,7 +113,7 @@ def bin_runs(ipts: int, runs: int, rune: int, *, runv: int = -1, smooth: bool = 
     saved_files = []
 
     for run, nexus_file in all_runs.items():
-        ws_name = f"VULCAN_{run}"
+        ws_name = mtd.unique_name(prefix=f"__VULCAN_{run}")
         focus_run(nexus_file, ws_name)
         if vanadium_ws is not None:
             divide_by_vanadium(ws_name, vanadium_ws)
