@@ -105,6 +105,12 @@ def get_tof_bins(date_aquired: datetime.datetime) -> TofBins:
 
     The binning will be returned as a TofBins object
     """
+    # NOTE for TOF binning, we do not have the full set of binning params per era.
+    # This is pending CIS/IS investigation.
+    # For now, we will use a fallback to compute the TOF bins using the instrument resolution
+    # and ensuring constant bins/peak.
+    # This approach approximates the TOF binning used by VDRIVE,
+    # but may not be exact enough for A/B testing.
     try:
         tof_era = _bisect_era(TOF_BIN_LIST, date_aquired)
         _log.debug(f"Using TOF binning era {tof_era} for acquisition date {date_aquired}")
