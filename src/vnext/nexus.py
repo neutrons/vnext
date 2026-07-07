@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any
 
 import h5py
-from mantid.simpleapi import DeleteWorkspace, LoadEventNexus, mtd  # ty: ignore[unresolved-import]
+from mantid.simpleapi import DeleteWorkspace, LoadEventNexus, mtd
 
 from vnext import Config, FilePath
 
