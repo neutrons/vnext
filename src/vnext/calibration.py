@@ -7,8 +7,7 @@ from pathlib import Path
 
 from mantid.kernel import Logger
 
-from vnext import Config
-from vnext._typing import FilePath
+from vnext import Config, FilePath
 from vnext.dao import CalibrationFiles, FocusPositions, TofBins
 from vnext.dao.calibration_files import load_calibration_files as _load_calibration_files
 from vnext.dao.focus_positions import load_focus_positions as _load_focus_positions
@@ -27,7 +26,7 @@ def _get_focuspositions_from_char_file(filepath: FilePath) -> FocusPositions:
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Characterization file does not exist: {filepath}")
 
-    from mantid.simpleapi import PDLoadCharacterizations, mtd  # ty: ignore[unresolved-import]
+    from mantid.simpleapi import PDLoadCharacterizations, mtd
 
     wkspname = mtd.unique_name(5, prefix="pdchar")
     (_, _, l1, specnum, l2, polar, azimuthal) = PDLoadCharacterizations(
@@ -97,7 +96,7 @@ def get_calibration_info(date_aquired: datetime.datetime, config=None) -> tuple[
     return cal_file, focus_pos
 
 
-def get_tof_info(date_aquired: datetime.datetime) -> TofBins:
+def get_tof_bins(date_aquired: datetime.datetime) -> TofBins:
     """
     Get the correct TOF binning parameters for reduction based on the date of acquisition of the data.
 
@@ -106,37 +105,20 @@ def get_tof_info(date_aquired: datetime.datetime) -> TofBins:
 
     The binning will be returned as a TofBins object
     """
-    tof_era = _bisect_era(TOF_BIN_LIST, date_aquired)
-    _log.debug(f"Using TOF binning era {tof_era} for acquisition date {date_aquired}")
-    tof_bins = TOF_BIN_LIST[tof_era]
-    if not isinstance(tof_bins, TofBins):
-        raise TypeError(
-            f"TOF binning for era {tof_era} is a reference and must be "
-            "resolved to inline values in tof_bins.yaml before use"
-        )
+    # NOTE for TOF binning, we do not have the full set of binning params per era.
+    # This is pending CIS/IS investigation.
+    # For now, we will use a fallback to compute the TOF bins using the instrument resolution
+    # and ensuring constant bins/peak.
+    # This approach approximates the TOF binning used by VDRIVE,
+    # but may not be exact enough for A/B testing.
+    try:
+        tof_era = _bisect_era(TOF_BIN_LIST, date_aquired)
+        _log.debug(f"Using TOF binning era {tof_era} for acquisition date {date_aquired}")
+        tof_bins = TOF_BIN_LIST[tof_era]
+    except ValueError:
+        focus = get_calibration_info(date_aquired)[1]
+        tof_bins = compute_tof_bins(focus)
     return tof_bins
-
-
-def extract_nexus_metadata(nexus_file: FilePath) -> tuple[datetime.datetime, float, float]:
-    """
-    Read run metadata from NeXus.
-    VULCAN has two chopper pairs; Skf34 (20 Hz, ~2.8 Å) is used for
-    standard wide-range powder reduction.  Log names may vary by era —
-    try each name in order and use the first one present.
-    """
-    import h5py
-
-    # Chopper log names — first entry in each list is the preferred (current) name.
-    wl_keys = Config["instrument.PVLogs.choppers.skf34.wavelength"]
-    spd_keys = Config["instrument.PVLogs.choppers.skf34.speed"]
-
-    with h5py.File(nexus_file, "r") as f:
-        logs = f[Config["instrument.nexus.das_logs"]]
-        run_date = datetime.datetime.fromisoformat(f[Config["instrument.nexus.start_time_log"]][0].decode()[:19])
-        center_wavelength = float(next(logs[k] for k in wl_keys if k in logs)["value"][0])
-        frequency = float(next(logs[k] for k in spd_keys if k in logs)["value"][0])
-
-    return run_date, center_wavelength, frequency
 
 
 def compute_tof_bins(

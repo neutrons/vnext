@@ -1,16 +1,28 @@
 from pathlib import Path
 from typing import Any
 
-from mantid.simpleapi import (
-    AlignAndFocusPowderSlim,  # ty: ignore[unresolved-import]
-    DeleteWorkspace,  # ty: ignore[unresolved-import]
-    SaveGSS,  # ty: ignore[unresolved-import]
-    mtd,
-)
+from mantid.simpleapi import mtd
 
-from vnext import UNSET_FLOAT, Config, VNEXTBackend
-from vnext.calibration import extract_nexus_metadata, get_calibration_info, get_tof_info
-from vnext.fileservice import get_runs_in_range
+from vnext import UNSET_FLOAT, Config, VNEXTBackend, detector, plotting
+from vnext.fileservice import get_bins_in_range
+from vnext.gsas import (
+    pattern_workspace,
+    sequential_view_workspaces,
+    sum_gss_files,
+)
+from vnext.nexus import extract_log, load_run_logs
+from vnext.reduction import bin_runs
+
+# vnextview options that are accepted for VDRIVE compatibility but not yet
+# implemented; each maps to the "unset" sentinel that means "not requested".
+_VIEW_UNSUPPORTED = (
+    ("chopruns", -1),
+    ("runv", -1),
+    ("norm", -1),
+    ("pc", -1),
+    ("minv", UNSET_FLOAT),
+    ("maxv", UNSET_FLOAT),
+)
 
 
 def func(kwargs):
@@ -48,18 +60,26 @@ class Backend(VNEXTBackend):
         - pc:  Normalize with proton charge
         - minv: Cutoff of x axis
         - maxv: Cutoff of x axis."""
-        return {
-            "name": "vnextview",
-            "ipts": ipts,
-            "runs": runs,
-            "rune": rune,
-            "chopruns": chopruns,
-            "runv": runv,
-            "norm": norm,
-            "pc": pc,
-            "minv": minv,
-            "maxv": maxv,
-        }
+
+        requested = {"chopruns": chopruns, "runv": runv, "norm": norm, "pc": pc, "minv": minv, "maxv": maxv}
+        for option, sentinel in _VIEW_UNSUPPORTED:
+            if requested[option] != sentinel:
+                raise NotImplementedError(f"vnextview option '{option}' is not yet implemented")
+
+        # Single pattern: rune unset (or equal to runs).
+        if rune == -1 or rune == runs:
+            bins = get_bins_in_range(ipts, runs)
+            if not bins:
+                raise FileNotFoundError(f"GSAS file not found for run {runs} in IPTS {ipts}")
+            with pattern_workspace(bins[runs], title=f"IPTS-{ipts} run {runs}") as ws:
+                result = {"ipts": ipts, "runs": runs}
+                plotting.plot_pattern(ws, show=True)
+            return result
+
+        # Sequential patterns: stack each present run's spectrum per bank into a 2-D workspace.
+        with sequential_view_workspaces(ipts, runs, rune) as (runs_present, workspaces):
+            plotting.plot_contour(workspaces, show=True)
+        return {"ipts": ipts, "runs_present": runs_present}
 
     def vnextbin(
         self,
@@ -78,68 +98,55 @@ class Backend(VNEXTBackend):
         if chopruns != -1:
             raise NotImplementedError("Binning of pre-chopped data is not yet implemented")
 
-        output_dir = Path(Config["instrument.reduction.bin"].format(IPTS=ipts))
-        output_dir.mkdir(parents=True, exist_ok=True)
+        return bin_runs(ipts, runs, rune)
 
-        run_end = rune if rune != -1 else runs
-        all_runs = get_runs_in_range(ipts, runs, run_end)
-        if len(all_runs) == 0:
-            raise ValueError(f"No valid runs found for IPTS {ipts} in range {runs}-{run_end}")
+    def vnextbin_n(
+        self,
+        *,
+        ipts: int,
+        runs: int,
+        rune: int = -1,
+        runv: int = -1,
+        chopruns: int = -1,
+    ) -> dict[str, Any]:
+        """Bin event data and normalize by a vanadium run.
 
-        saved_files = []
+        Same focusing pipeline as ``vnextbin``, but each run is divided by the
+        focused vanadium spectrum (an ordinary event run identified by ``runv``).
 
-        for run, nexus_file in all_runs.items():
-            # get file metadata with run data, wavelength, and frequency
-            run_date, center_wavelength, frequency = extract_nexus_metadata(nexus_file)
-            # the run date can determine the calibration file to use and the focus positions
-            calib_file, focus_pos = get_calibration_info(run_date)
-            # the focus positions with the wavelength and frequency determine the TOF binning
-            tof = get_tof_info(run_date)
+        Parameters
+        - runs: Start run number
+        - rune: End run number
+        - runv: Vanadium run number for normalization (required)
+        - chopruns: Chopruns where data are chopped from"""
 
-            ws_name = f"VULCAN_{run}"
-            output_file = output_dir / f"{run}.gda"
+        if chopruns != -1:
+            raise NotImplementedError("Binning of pre-chopped data is not yet implemented")
+        if runv == -1:
+            raise ValueError("vnextbin_n requires runv (the vanadium run number)")
 
-            AlignAndFocusPowderSlim(
-                Filename=str(nexus_file),
-                CalFileName=str(calib_file),
-                L1=focus_pos.l1,
-                L2=focus_pos.l2,
-                Polar=focus_pos.polar,
-                Azimuthal=focus_pos.azimuthal,
-                BinningUnits="TOF",
-                XMin=tof.xmin,
-                XDelta=tof.xdelta,
-                XMax=tof.xmax,
-                LogBlockList=r"Phase*,Speed*,BL*:Chop:*,chopper*TDC",
-                OutputWorkspace=ws_name,
-                BinningMode=tof.binning_mode,
-            )
+        return bin_runs(ipts, runs, rune, runv=runv)
 
-            SaveGSS(
-                InputWorkspace=ws_name,
-                Filename=str(output_file),
-                SplitFiles=False,
-                Append=False,
-                Format="SLOG",
-                MultiplyByBinWidth=False,
-                ExtendedHeader=True,
-                UseSpectrumNumberAsBankID=True,
-            )
+    def vnextbin_ns(
+        self,
+        *,
+        ipts: int,
+        runs: int,
+        rune: int = -1,
+        runv: int = -1,
+        chopruns: int = -1,
+    ) -> dict[str, Any]:
+        """Bin event data and normalize by a smoothed vanadium run.
 
-            if ws_name in mtd:
-                DeleteWorkspace(ws_name)
+        As ``vnextbin_n`` but the vanadium spectrum is boxcar-smoothed before the
+        division, approximating the ``-s.gda`` smoothed vanadium from VPEAK.
+        """
+        if chopruns != -1:
+            raise NotImplementedError("Binning of pre-chopped data is not yet implemented")
+        if runv == -1:
+            raise ValueError("vnextbin_ns requires runv (the vanadium run number)")
 
-            saved_files.append(str(output_file))
-
-        if len(saved_files) == 1:
-            return {"output": saved_files[0]}
-        return {"output": str(output_dir)}
-
-    def vnextbin_n(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
-        return {"name": "vnextbin_n", "ipts": ipts, **kwargs}
-
-    def vnextbin_ns(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
-        return {"name": "vnextbin_ns", "ipts": ipts, **kwargs}
+        return bin_runs(ipts, runs, rune, runv=runv, smooth=True)
 
     def vnextchop(
         self,
@@ -239,8 +246,36 @@ class Backend(VNEXTBackend):
         - runm: Template run default is first one"""
         return {"name": "vnextgsas", "ipts": ipts, "runs": runs, "rune": rune, "choprun": choprun, "runm": runm}
 
-    def vnextlog(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
-        return {"name": "vnextlog", "ipts": ipts, **kwargs}
+    def vnextlog(
+        self,
+        *,
+        ipts: int,
+        runs: int = -1,
+        name: str = "",
+    ) -> dict[str, Any]:
+        """Open a run's sample-environment (DASlogs) data from its NeXus file.
+
+        Without ``name`` the available log names are returned.  With ``name`` the
+        elapsed-time / value series for that log is returned and handed to the
+        plotting layer for display.
+
+        Parameters
+        - runs: Run number whose NeXus file is read
+        - name: Name of the DASlog to extract; omit to list available logs"""
+
+        nexus_file = Path(Config["instrument.data.file"].format(IPTS=ipts, run=runs))
+        if not nexus_file.exists():
+            raise FileNotFoundError(f"NeXus file not found for run {runs}: {nexus_file}")
+
+        # Listing mode: read names straight from the file (no workspace needed).
+        if not name:
+            return {"ipts": ipts, "run": runs, **extract_log(nexus_file)}
+
+        # Named log: load the run's logs into a workspace and plot it directly.
+        ws_name = mtd.unique_name(prefix=f"__vnextlog_{runs}_{name}")
+        workspace = load_run_logs(nexus_file, ws_name, require=name)
+        plotting.plot_log(workspace, name, show=True)
+        return {"ipts": ipts, "run": runs, "name": name, "workspace": ws_name}
 
     def vnextfit(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
         return {"name": "vnextfit", "ipts": ipts, **kwargs}
@@ -254,11 +289,62 @@ class Backend(VNEXTBackend):
     def vnextmerge(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
         return {"name": "vnextmerge", "ipts": ipts, **kwargs}
 
-    def vnextpixel(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
-        return {"name": "vnextpixel", "ipts": ipts, **kwargs}
+    def vnextpixel(
+        self,
+        *,
+        ipts: int,
+        runs: int,
+        runv: int = -1,
+    ) -> dict[str, Any]:
+        """View the per-pixel detector intensity contour for a single run.
+
+        Loads the run's raw events, integrates total counts per detector pixel,
+        and hands the result to the plotting layer as a scattering-angle map.
+
+        Parameters
+        - runs: Run number whose NeXus file is read
+        - runv: Instrument parameter run (not yet implemented)"""
+
+        if runv != -1:
+            raise NotImplementedError("vnextpixel option 'runv' is not yet implemented")
+
+        nexus_file = Path(Config["instrument.data.file"].format(IPTS=ipts, run=runs))
+        if not nexus_file.exists():
+            raise FileNotFoundError(f"NeXus file not found for run {runs}: {nexus_file}")
+
+        result = {"ipts": ipts, "run": runs, **detector.pixel_counts(nexus_file)}
+        plotting.plot_pixel(result, show=True)
+        return result
 
     def vnextpole(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
         return {"name": "vnextpole", "ipts": ipts, **kwargs}
 
-    def vnextsum(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
-        return {"name": "vnextsum", "ipts": ipts, **kwargs}
+    def vnextsum(
+        self,
+        *,
+        ipts: int,
+        runs: int = -1,
+        rune: int = -1,
+        runlist: list[int] | None = None,
+        runfile: str = "",
+        runv: int = -1,
+    ) -> dict[str, Any]:
+        """Sum (co-add) GSAS histogram files over a set of runs into one file.
+
+        The set of runs is taken, in priority order, from ``runlist`` (an explicit
+        list), ``runfile`` (a whitespace/newline-delimited text file of run numbers),
+        or the ``runs``/``rune`` range.  Inputs are read from ``binned_data/`` and the
+        summed file is written to ``Summed_GDA/<first run>.gda``.  Missing ``.gda``
+        files are skipped silently, mirroring ``vnextbin``.
+
+        Parameters
+        - runs: Start run number (used with rune when no runlist/runfile given)
+        - rune: End run number
+        - runlist: Explicit list of run numbers to sum
+        - runfile: Path to a text file of run numbers (whitespace/newline delimited)
+        - runv: Vanadium run for normalization (not yet implemented)"""
+
+        if runv != -1:
+            raise NotImplementedError("Vanadium normalization (runv) is not yet implemented for vnextsum")
+
+        return sum_gss_files(ipts, runs, rune, runlist, runfile)

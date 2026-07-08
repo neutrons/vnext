@@ -17,9 +17,10 @@ repos:
         args: [--allow-multiple-documents]
         exclude: "conda.recipe/meta.yaml"
       - id: end-of-file-fixer
-        exclude: "tests/cis_tests/.*"
+        # GSAS .gda fixtures are fixed-width (80-col, space-padded) — do not reflow.
+        exclude: "tests/cis_tests/.*|tests/data/gsas/.*\\.gda"
       - id: trailing-whitespace
-        exclude: "tests/cis_tests/.*"
+        exclude: "tests/cis_tests/.*|tests/data/gsas/.*\\.gda"
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.20
     hooks:

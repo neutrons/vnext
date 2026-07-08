@@ -19,6 +19,7 @@ instrument:
     # {IPTS} is a runtime template placeholder, not a config substitution.
     home: ${instrument.home}/IPTS-{IPTS}/shared/VNext
     bin: ${instrument.reduction.home}/binned_data
+    sum: ${instrument.reduction.home}/Summed_GDA
   startingRunNumber: 1000
 
   nexus:
