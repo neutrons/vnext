@@ -4,7 +4,7 @@
 [project]
 name = "vnext"
 description = "Data reduction for VULCAN"
-version = "0.1.0.dev6"
+dynamic = ["version"]
 requires-python = ">=3.12"
 license = { text = "MIT" }
 keywords = ["neutrons", "python"]
@@ -33,13 +33,42 @@ issues = "https://github.com/neutrons/vnext/issues"
 
 [build-system]
 build-backend = "hatchling.build"
-requires = ["hatchling"]
+requires = ["hatchling", "versioningit"]
+
+[tool.hatch.version]
+source = "versioningit"
+
+[tool.hatch.build.hooks.versioningit-onbuild]
+source-file = "src/vnext/_version.py"
+build-file = "vnext/_version.py"
 
 [tool.hatch.build]
-artifacts = ["src/vnext/**/*.yml", "src/vnext/**/*.yaml", "src/vnext/**/*.ini"]
+artifacts = [
+  "src/vnext/_version.py",
+  "src/vnext/**/*.yml",
+  "src/vnext/**/*.yaml",
+  "src/vnext/**/*.ini",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/vnext"]
+
+[tool.versioningit.vcs]
+method = "git"
+default-tag = "0.1.0"
+
+[tool.versioningit.next-version]
+method = "minor"
+
+[tool.versioningit.format]
+distance = "{next_version}.dev{committer_date:%Y%m%d%H%M%S}"
+# Pixi builds temporarily rewrite pyproject.toml to inject a static package version,
+# so ignore that local change when deriving the wheel version.
+dirty = "{version}"
+distance-dirty = "{next_version}.dev{committer_date:%Y%m%d%H%M%S}"
+
+[tool.versioningit.write]
+file = "src/vnext/_version.py"
 
 
 ###################
@@ -81,6 +110,7 @@ vnext = { path = ".", editable = true }
 
 [tool.pixi.package.host-dependencies]
 hatchling = "*"
+versioningit = "*"
 
 [tool.pixi.package.run-dependencies]
 mantid = ">=6.16.0,<7.0"
@@ -91,6 +121,7 @@ neutrons_standard = "*"     # shared Config/infrastructure from the neutrons cha
 
 [tool.pixi.package]
 name = "vnext"
+version = "0.0.0" # placeholder, overwritten by sync-version
 
 [tool.pixi.package.build]
 backend = { name = "pixi-build-python", version = ">=0.5" }
@@ -115,12 +146,17 @@ pytest-xdist = "*"
 anaconda-client = ">=1.13.0,<2"
 twine = ">=6.1.0,<7"
 hatch = "*"
+versioningit = "*"
+
+[tool.pixi.feature.package.pypi-dependencies]
+toml-cli = "*"
 
 [tool.pixi.feature.developer.dependencies]
 pip = ">=25.3"
 pre-commit = "*"
 pixi-pycharm = ">=0.0.10,<0.0.11"
 ty = ">=0.0.40"
+versioningit = "*"
 
 [tool.pixi.feature.docs.dependencies]
 sphinx = "*"
@@ -147,7 +183,6 @@ pypi-publish = { cmd = "twine upload dist/*", description = "Publish the package
 pypi-publish-test = { cmd = "twine upload --repository testpypi dist/*", description = "Publish the package to TestPyPI", depends-on = [
   "pypi-build",
 ] }
-conda-build = { cmd = "pixi build", description = "Build the conda package command" }
 conda-publish = { cmd = "anaconda upload *.conda", description = "Publish the .conda package to anaconda.org", depends-on = [
   "conda-build",
 ] }
@@ -162,6 +197,17 @@ clean-all = { description = "Clean all artifacts", depends-on = [
   "clean-docs",
   "clean-pypi",
 ] }
+# workaround for dynamic versioning
+sync-version = { cmd = 'version=$(python -m versioningit); toml set tool.pixi.package.version "$version" --toml-path pyproject.toml', description = "Sync pyproject.toml version with Git version" }
+backup-toml = { cmd = "cp pyproject.toml pyproject.toml.bak", description = "Backup the pyproject.toml file" }
+reset-toml = { cmd = "cp pyproject.toml.bak pyproject.toml; rm pyproject.toml.bak", description = "Reset the pyproject.toml file to the original state" }
+conda-build = { description = "Build the conda package", depends-on = [
+  "backup-toml",
+  "sync-version",
+  "conda-build-command",
+  "reset-toml",
+] }
+conda-build-command = { cmd = "pixi build", description = "Build the conda package command" }
 vnext = { cmd = "vnext", description = "Launch the vnext interactive shell" }
 ty-check = { cmd = "ty check {{filename}}", description = "Run ty check", default-environment = "developer", args = [
   { "arg" = "filename", "default" = "" },
