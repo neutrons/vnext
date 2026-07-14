@@ -68,7 +68,7 @@ conda-pypi-map = { "conda-forge" = "pixi-mapping.json" }
 h2 = ">=4.3.0"              # Known vulnerability in <4.3.0
 brotli = ">=1.2.0"
 ipython = ">=9.9.0,<10"
-mantid = ">=6.16.0,<6.17"
+mantid = ">=6.16.0,<7.0"
 mantidprofiler = ">=1.4,<2"
 matplotlib = "*"            # mantidqt and mantidworkbench both require matplotlib
 neutrons_standard = "*"     # shared Config/infrastructure from the neutrons channel
@@ -83,7 +83,7 @@ vnext = { path = ".", editable = true }
 hatchling = "*"
 
 [tool.pixi.package.run-dependencies]
-mantid = ">=6.16.0,<6.17"
+mantid = ">=6.16.0,<7.0"
 mantidprofiler = ">=1.4,<2"
 matplotlib = "*"            # mantidqt and mantidworkbench both require matplotlib
 ipython = ">=9.9.0,<10"
