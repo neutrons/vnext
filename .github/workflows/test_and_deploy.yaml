@@ -118,12 +118,22 @@ jobs:
           name: artifact-conda-package
       - name: List package directory
         run: ls -l ${{ steps.download.outputs.download-path }}
-      - name: Upload package to anaconda
+      - name: Upload package to anaconda (main)
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: neutrons/conda-actions/publish@v2
         with:
           anaconda-token: ${{ secrets.ANACONDA_TOKEN }}
           organization: ${{ env.CONDA_ORG }}
           package-path: ${{ steps.download.outputs.download-path }}/${{ env.PKG_NAME }}-*.conda
+          label: main
+      - name: Upload package to anaconda (dev)
+        if: github.ref == 'refs/heads/next'
+        uses: neutrons/conda-actions/publish@v2
+        with:
+          anaconda-token: ${{ secrets.ANACONDA_TOKEN }}
+          organization: ${{ env.CONDA_ORG }}
+          package-path: ${{ steps.download.outputs.download-path }}/${{ env.PKG_NAME }}-*.conda
+          label: dev
       - name: Remove old packages
         if: github.ref == 'refs/heads/next'
         uses: neutrons/conda-actions/pkg-remove@v2
@@ -131,7 +141,7 @@ jobs:
           anaconda_token: ${{ secrets.ANACONDA_TOKEN }}
           organization: ${{ env.CONDA_ORG }}
           package_name: ${{ env.PKG_NAME }}
-          label: ${{ env.CONDA_LABEL }}
+          label: dev
           keep: 5
 
   pypi-build:
