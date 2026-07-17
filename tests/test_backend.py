@@ -470,10 +470,30 @@ def test_plot_pattern_draws_each_bank():
     )
     ws.setTitle("IPTS-1 run 400")
 
-    ax = plot_pattern(ws, show=False)
-    assert len(ax.lines) == 2
-    assert ax.get_title() == "IPTS-1 run 400"
+    axes = plot_pattern(ws, show=False)
+    assert len(axes) == 2
+    for i, ax in enumerate(axes, start=1):
+        assert len(ax.lines) == 1
+        assert ax.get_title() == f"IPTS-1 run 400 - bank {i}"
+        assert ax.get_ylabel() == "Intensity"
     DeleteWorkspace("test_plot_pattern_ws")
+
+
+def test_plot_pattern_skips_blank_banks():
+    # Three spectra = three banks; the last is entirely zero (unused bank).
+    ws = CreateWorkspace(
+        DataX=[1.0, 2.0, 3.0, 1.0, 2.0, 3.0, 1.0, 2.0, 3.0],
+        DataY=[10.0, 20.0, 15.0, 5.0, 8.0, 6.0, 0.0, 0.0, 0.0],
+        NSpec=3,
+        UnitX="TOF",
+        OutputWorkspace="test_plot_pattern_blank_ws",
+    )
+    ws.setTitle("IPTS-1 run 400")
+
+    axes = plot_pattern(ws, show=False)
+    assert len(axes) == 2
+    assert [ax.get_title() for ax in axes] == ["IPTS-1 run 400 - bank 1", "IPTS-1 run 400 - bank 2"]
+    DeleteWorkspace("test_plot_pattern_blank_ws")
 
 
 def test_plot_contour_one_axes_per_bank():
@@ -495,3 +515,25 @@ def test_plot_contour_one_axes_per_bank():
     assert len(axes) == 2
     for bank in (1, 2):
         DeleteWorkspace(f"test_plot_contour_ws{bank}")
+
+
+def test_plot_contour_skips_blank_banks():
+    workspaces = []
+    for bank, data in enumerate((np.random.rand(9), np.zeros(9)), start=1):
+        ws = CreateWorkspace(
+            DataX=np.tile([1.0, 2.0, 3.0], 3),
+            DataY=data,
+            NSpec=3,
+            UnitX="TOF",
+            VerticalAxisUnit="Label",
+            VerticalAxisValues=["500", "501", "502"],
+            OutputWorkspace=f"test_plot_contour_blank_ws{bank}",
+        )
+        ws.setTitle(f"bank {bank}")
+        workspaces.append(ws)
+
+    axes = plot_contour(workspaces, show=False)
+    assert len(axes) == 1
+    assert axes[0].get_title() == "bank 1"
+    for bank in (1, 2):
+        DeleteWorkspace(f"test_plot_contour_blank_ws{bank}")
