@@ -158,7 +158,7 @@ def _generate_chop_splitter(logs_ws: str, splitter_ws: str, info_ws: str, *, dbi
             bounds["StartTime"] = str(minv)
         if maxv != UNSET_FLOAT:
             bounds["StopTime"] = str(maxv)
-        GenerateEventsFilter(**common, UnitOfTime="Seconds", RelativeTime=True, TimeInterval=dbin, **bounds)
+        GenerateEventsFilter(**common, UnitOfTime="Seconds", TimeInterval=dbin, **bounds)
     else:
         bounds = {}
         if minv != UNSET_FLOAT:

@@ -267,7 +267,6 @@ def test_vnextchop_time_slices_and_saves(mantid_chop_mocks):
     gen_kwargs = mantid_chop_mocks["gen"].call_args.kwargs
     assert gen_kwargs["TimeInterval"] == 60
     assert gen_kwargs["UnitOfTime"] == "Seconds"
-    assert gen_kwargs["RelativeTime"] is True
     assert "LogName" not in gen_kwargs  # time mode, not SE mode
 
     # The focuser is driven by the splitter built above, under a unique temp name.
