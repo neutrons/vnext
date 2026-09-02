@@ -1,10 +1,17 @@
 from IPython.terminal.embed import InteractiveShellEmbed
 from IPython.terminal.prompts import Prompts
+from mantid.kernel import ConfigService
+from mantid.simpleapi import DownloadInstrument
 from pygments.token import Token
 from traitlets.config import Config
 
 from vnext.backend import Backend
 from vnext.vmagic import load_ipython_extension
+
+# Mantid normally updates instrument on startup.
+# That thread races the IPython prompt and can print in the middle of it.
+# Perform the check manually instead, before the shell is created.
+ConfigService.Instance().setString("UpdateInstrumentDefinitions.OnStartup", "0")
 
 
 class VPrompts(Prompts):
@@ -16,6 +23,10 @@ class VPrompts(Prompts):
 
 
 def main(*argv, **kwargs):  # noqa: ARG001
+    # Update instrument definitions
+    # Prevents a race with IPython's prompt rendering.
+    DownloadInstrument()
+
     backend = Backend()
 
     config = Config()
