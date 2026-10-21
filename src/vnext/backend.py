@@ -11,7 +11,7 @@ from vnext.gsas import (
     sum_gss_files,
 )
 from vnext.nexus import extract_log, load_run_logs
-from vnext.reduction import bin_runs
+from vnext.reduction import bin_runs, chop_runs
 
 # vnextview options that are accepted for VDRIVE compatibility but not yet
 # implemented; each maps to the "unset" sentinel that means "not requested".
@@ -163,10 +163,30 @@ class Backend(VNEXTBackend):
         - dbin: time bin
         - minv: minimum value
         - maxv: maximum value"""
-        return {"name": "vnextchop", "ipts": ipts, "runs": runs, "dbin": dbin, "minv": minv, "maxv": maxv}
+        return chop_runs(ipts, runs, dbin=dbin, minv=minv, maxv=maxv)
 
-    def vnextchop_en(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]:
-        return {"name": "vnextchop_en", "ipts": ipts, **kwargs}
+    def vnextchop_en(
+        self,
+        *,
+        ipts: int,
+        runs: int,
+        dbin: float = 1,
+        minv: float = UNSET_FLOAT,
+        maxv: float = UNSET_FLOAT,
+    ) -> dict[str, Any]:
+        """Chop and bin continuously collected data, for 2018-2020 (nED-beta) data.
+
+        VDRIVE's ``chopen`` is the ``@VDRIVEbeta`` loader variant of ``chop`` for
+        data collected between the 2018-2020 detector upgrade; the chopping and
+        binning behaviour is identical, so this delegates to the same path as
+        ``vnextchop``.
+
+        Parameters
+        - runs: Start run number
+        - dbin: time bin
+        - minv: minimum value
+        - maxv: maximum value"""
+        return chop_runs(ipts, runs, dbin=dbin, minv=minv, maxv=maxv)
 
     def vnextchop_ens(
         self,
@@ -185,7 +205,7 @@ class Backend(VNEXTBackend):
         - dse (float): sample environment bin
         - minv: minimum value
         - maxv: maximum value"""
-        return {"name": "vnextchop_ens", "ipts": ipts, "runs": runs, "se": se, "dse": dse, "minv": minv, "maxv": maxv}
+        return chop_runs(ipts, runs, se=se, dse=dse, minv=minv, maxv=maxv)
 
     def vnextspf(
         self,

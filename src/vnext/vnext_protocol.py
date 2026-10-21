@@ -98,7 +98,27 @@ class VNEXTBackend(ABC):
         """
 
     @abstractmethod
-    def vnextchop_en(self, *, ipts: int, **kwargs: Any) -> dict[str, Any]: ...
+    def vnextchop_en(
+        self,
+        *,
+        ipts: int,
+        runs: int,
+        dbin: float = 1,
+        minv: float = UNSET_FLOAT,
+        maxv: float = UNSET_FLOAT,
+    ) -> dict[str, Any]:
+        """Chop and bin continuously collected data (2018-2020 nED-beta variant).
+
+        Behaves like :meth:`vnextchop`; the ``en`` suffix is VDRIVE's
+        ``@VDRIVEbeta`` loader variant for data from the 2018-2020 detector era.
+
+        Args:
+            ipts: IPTS experiment number.
+            runs: Start run number.
+            dbin: Time bin width (seconds).
+            minv: Minimum value (slice lower time bound, seconds).
+            maxv: Maximum value (slice upper time bound, seconds).
+        """
 
     @abstractmethod
     def vnextchop(

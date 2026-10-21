@@ -20,6 +20,12 @@ instrument:
     home: ${instrument.home}/IPTS-{IPTS}/shared/VNext
     bin: ${instrument.reduction.home}/binned_data
     sum: ${instrument.reduction.home}/Summed_GDA
+    # Chopped raw slices and synchronized sample-environment files (VDRIVE
+    # ChoppedData/<run>/).  The chopped GSAS histograms themselves live under
+    # bin/<run>/ so VBIN/VIEW with choprun=<run> find them, mirroring VDRIVE.
+    chop: ${instrument.reduction.home}/ChoppedData
+    # Single-peak-fit result tables (VDRIVE's SPF_data folder)
+    spf: ${instrument.reduction.home}/SPF_data
   startingRunNumber: 1000
 
   nexus:
