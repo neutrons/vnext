@@ -25,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 100
+          fetch-depth: 1
           fetch-tags: true
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@ad1da6449d9e506fd127fd67ab2d054a769f6a94 # v0.11.2
@@ -59,7 +59,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: 100
           fetch-tags: true
 
       - name: Setup pixi
@@ -75,7 +75,7 @@ jobs:
 
       - name: Install package
         id: installed
-        uses: neutrons/conda-actions/pkg-install@v2
+        uses: neutrons/gh-actions/pkg-install@eb7a7c6fcfd0cda1a7b238329afc0afd09a4f4af # v2
         with:
           package-name: ${{ env.PKG_NAME }}
           local-channel: ${{ runner.temp }}/local-channel/
@@ -83,10 +83,10 @@ jobs:
           extra-channels: mantid-ornl/label/rc neutrons mantid
 
       - name: Verify conda package
-        uses: neutrons/conda-actions/pkg-verify@v2
+        uses: neutrons/gh-actions/pkg-verify@eb7a7c6fcfd0cda1a7b238329afc0afd09a4f4af # v2
         with:
           package-name: ${{ env.PKG_NAME }}
-          conda-env-name: ${{ steps.installed.outputs.conda_env }}
+          conda-env-name: ${{ steps.installed.outputs.conda-env }}
           module-name: ${{ env.MODULE_NAME }}
           extra-commands: |
             python -c "import mantid"
@@ -105,6 +105,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 100
+          fetch-tags: true
 
       - name: Setup Pixi
         uses: prefix-dev/setup-pixi@ad1da6449d9e506fd127fd67ab2d054a769f6a94 # v0.11.2
@@ -120,7 +123,7 @@ jobs:
         run: ls -l ${{ steps.download.outputs.download-path }}
       - name: Upload package to anaconda (main)
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: neutrons/conda-actions/publish@v2
+        uses: neutrons/gh-actions/publish@eb7a7c6fcfd0cda1a7b238329afc0afd09a4f4af # v2
         with:
           anaconda-token: ${{ secrets.ANACONDA_TOKEN }}
           organization: ${{ env.CONDA_ORG }}
@@ -128,21 +131,31 @@ jobs:
           label: main
       - name: Upload package to anaconda (dev)
         if: github.ref == 'refs/heads/next'
-        uses: neutrons/conda-actions/publish@v2
+        uses: neutrons/gh-actions/publish@eb7a7c6fcfd0cda1a7b238329afc0afd09a4f4af # v2
         with:
           anaconda-token: ${{ secrets.ANACONDA_TOKEN }}
           organization: ${{ env.CONDA_ORG }}
           package-path: ${{ steps.download.outputs.download-path }}/${{ env.PKG_NAME }}-*.conda
           label: dev
+      - name: Check whether this workflow changed
+        id: workflow_changed
+        if: github.ref == 'refs/heads/next'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
+        with:
+          base: ${{ github.ref_name }}
+          filters: |
+            workflow:
+              - '.github/workflows/test_and_deploy.yaml'
       - name: Remove old packages
         if: github.ref == 'refs/heads/next'
-        uses: neutrons/conda-actions/pkg-remove@v2
+        uses: neutrons/gh-actions/pkg-remove@eb7a7c6fcfd0cda1a7b238329afc0afd09a4f4af # v2
         with:
-          anaconda_token: ${{ secrets.ANACONDA_TOKEN }}
+          anaconda-token: ${{ secrets.ANACONDA_TOKEN }}
           organization: ${{ env.CONDA_ORG }}
-          package_name: ${{ env.PKG_NAME }}
+          package-name: ${{ env.PKG_NAME }}
           label: dev
           keep: 5
+          dry-run: ${{ steps.workflow_changed.outputs.workflow == 'true' }}
 
   pypi-build:
     name: Upload release to PyPI
