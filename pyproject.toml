@@ -209,7 +209,7 @@ conda-build = { description = "Build the conda package", depends-on = [
 ] }
 conda-build-command = { cmd = "pixi build", description = "Build the conda package command" }
 vnext = { cmd = "vnext", description = "Launch the vnext interactive shell" }
-ty-check = { cmd = "ty check {{filename}}", description = "Run ty check", default-environment = "developer", args = [
+ty-check = { cmd = "ty check {{filename}}", description = "Run ty check", args = [
   { "arg" = "filename", "default" = "" },
 ] }
 
