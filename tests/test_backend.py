@@ -218,6 +218,125 @@ def test_vnextbin_ns_smooths_vanadium(mantid_norm_mocks):
 
 
 # ---------------------------------------------------------------------------
+# vnextchop / vnextchop_en / vnextchop_ens — slice a run and focus each slice
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def chop_output_dir():
+    """Yield binned_data/<run>/ (where chopped .gda files land) and clean up."""
+    from vnext import Config
+
+    binned = Path(Config["instrument.reduction.bin"].format(IPTS=IPTS))
+    d = binned / str(RUN)
+    d.mkdir(parents=True, exist_ok=True)
+    yield d
+    shutil.rmtree(binned, ignore_errors=True)
+
+
+@pytest.fixture
+def mantid_chop_mocks():
+    """Patch the chop pipeline's Mantid calls; the focuser returns a 3-slice group."""
+    from mantid.api import WorkspaceGroup
+
+    mock_mtd = MagicMock()
+    mock_mtd.__contains__ = lambda *_: False  # nothing in mtd → skip DeleteWorkspace
+    # Real mtd.unique_name returns f"{prefix}<random>"; echo the prefix so the
+    # temporary workspace names are deterministic for assertions.
+    mock_mtd.unique_name.side_effect = lambda *, prefix: prefix
+    group = MagicMock(spec=WorkspaceGroup)  # spec makes isinstance(group, WorkspaceGroup) true
+    group.getNames.return_value = [f"VULCAN_{RUN}_chopped_{i}" for i in (1, 2, 3)]
+    mock_mtd.__getitem__ = lambda *_: group
+
+    with (
+        patch("vnext.reduction.LoadEventNexus") as mock_load,
+        patch("vnext.reduction.GenerateEventsFilter") as mock_gen,
+        patch("vnext.reduction.AlignAndFocusPowderSlim") as mock_align,
+        patch("vnext.reduction.DeleteWorkspace"),
+        patch("vnext.gsas.SaveGSS") as mock_save,
+        patch("vnext.reduction.mtd", mock_mtd),
+    ):
+        yield {"load": mock_load, "gen": mock_gen, "align": mock_align, "save": mock_save, "mtd": mock_mtd}
+
+
+@pytest.mark.usefixtures("chop_output_dir")
+def test_vnextchop_time_slices_and_saves(mantid_chop_mocks):
+    """Time chop: a time-interval splitter feeds the focuser, one .gda per slice."""
+    result = Backend().vnextchop(ipts=IPTS, runs=RUN, dbin=60)
+
+    gen_kwargs = mantid_chop_mocks["gen"].call_args.kwargs
+    assert gen_kwargs["TimeInterval"] == 60
+    assert gen_kwargs["UnitOfTime"] == "Seconds"
+    assert "LogName" not in gen_kwargs  # time mode, not SE mode
+
+    # The focuser is driven by the splitter built above, under a unique temp name.
+    mantid_chop_mocks["mtd"].unique_name.assert_any_call(prefix=f"__VULCAN_{RUN}_splitter")
+    assert mantid_chop_mocks["align"].call_args.kwargs["SplitterWorkspace"] == f"__VULCAN_{RUN}_splitter"
+
+    assert result["segments"] == 3
+    assert mantid_chop_mocks["save"].call_count == 3
+    assert [Path(f).name for f in result["files"]] == ["1.gda", "2.gda", "3.gda"]
+    assert Path(result["output"]).name == str(RUN)
+
+
+@pytest.mark.usefixtures("chop_output_dir")
+def test_vnextchop_passes_time_bounds(mantid_chop_mocks):
+    Backend().vnextchop(ipts=IPTS, runs=RUN, dbin=10, minv=5.0, maxv=120.0)
+
+    gen_kwargs = mantid_chop_mocks["gen"].call_args.kwargs
+    assert gen_kwargs["StartTime"] == "5.0"
+    assert gen_kwargs["StopTime"] == "120.0"
+
+
+@pytest.mark.usefixtures("chop_output_dir")
+def test_vnextchop_en_delegates_to_same_path(mantid_chop_mocks):
+    """chopen is the nED-beta loader variant; same chopping behaviour as chop."""
+    result = Backend().vnextchop_en(ipts=IPTS, runs=RUN, dbin=30)
+
+    assert result["segments"] == 3
+    assert "LogName" not in mantid_chop_mocks["gen"].call_args.kwargs
+
+
+@pytest.mark.usefixtures("chop_output_dir")
+def test_vnextchop_ens_slices_on_log_value(mantid_chop_mocks):
+    """SE chop: the splitter slices on a log value, not on wall-clock time."""
+    Backend().vnextchop_ens(ipts=IPTS, runs=RUN, se="BL7:SE:SampleTemp", dse=5, minv=20.0, maxv=80.0)
+
+    gen_kwargs = mantid_chop_mocks["gen"].call_args.kwargs
+    assert gen_kwargs["LogName"] == "BL7:SE:SampleTemp"
+    assert gen_kwargs["LogValueInterval"] == 5
+    assert gen_kwargs["MinimumLogValue"] == 20.0
+    assert gen_kwargs["MaximumLogValue"] == 80.0
+    assert "TimeInterval" not in gen_kwargs
+
+
+@pytest.mark.usefixtures("chop_output_dir")
+def test_vnextchop_single_slice_returns_one_file():
+    """A bare workspace (no WorkspaceGroup) is treated as a single slice."""
+    mock_mtd = MagicMock()
+    mock_mtd.__contains__ = lambda *_: False
+    mock_mtd.__getitem__ = lambda *_: MagicMock()  # not a WorkspaceGroup
+
+    with (
+        patch("vnext.reduction.LoadEventNexus"),
+        patch("vnext.reduction.GenerateEventsFilter"),
+        patch("vnext.reduction.AlignAndFocusPowderSlim"),
+        patch("vnext.reduction.DeleteWorkspace"),
+        patch("vnext.gsas.SaveGSS"),
+        patch("vnext.reduction.mtd", mock_mtd),
+    ):
+        result = Backend().vnextchop(ipts=IPTS, runs=RUN, dbin=60)
+
+    assert result["segments"] == 1
+    assert [Path(f).name for f in result["files"]] == ["1.gda"]
+
+
+def test_vnextchop_missing_run_raises():
+    with pytest.raises(FileNotFoundError):
+        Backend().vnextchop(ipts=IPTS, runs=999999, dbin=60)
+
+
+# ---------------------------------------------------------------------------
 # vnextsum — co-add GSAS files over a set of runs
 # ---------------------------------------------------------------------------
 
@@ -470,10 +589,30 @@ def test_plot_pattern_draws_each_bank():
     )
     ws.setTitle("IPTS-1 run 400")
 
-    ax = plot_pattern(ws, show=False)
-    assert len(ax.lines) == 2
-    assert ax.get_title() == "IPTS-1 run 400"
+    axes = plot_pattern(ws, show=False)
+    assert len(axes) == 2
+    for i, ax in enumerate(axes, start=1):
+        assert len(ax.lines) == 1
+        assert ax.get_title() == f"IPTS-1 run 400 - bank {i}"
+        assert ax.get_ylabel() == "Intensity"
     DeleteWorkspace("test_plot_pattern_ws")
+
+
+def test_plot_pattern_skips_blank_banks():
+    # Three spectra = three banks; the last is entirely zero (unused bank).
+    ws = CreateWorkspace(
+        DataX=[1.0, 2.0, 3.0, 1.0, 2.0, 3.0, 1.0, 2.0, 3.0],
+        DataY=[10.0, 20.0, 15.0, 5.0, 8.0, 6.0, 0.0, 0.0, 0.0],
+        NSpec=3,
+        UnitX="TOF",
+        OutputWorkspace="test_plot_pattern_blank_ws",
+    )
+    ws.setTitle("IPTS-1 run 400")
+
+    axes = plot_pattern(ws, show=False)
+    assert len(axes) == 2
+    assert [ax.get_title() for ax in axes] == ["IPTS-1 run 400 - bank 1", "IPTS-1 run 400 - bank 2"]
+    DeleteWorkspace("test_plot_pattern_blank_ws")
 
 
 def test_plot_contour_one_axes_per_bank():
@@ -495,3 +634,25 @@ def test_plot_contour_one_axes_per_bank():
     assert len(axes) == 2
     for bank in (1, 2):
         DeleteWorkspace(f"test_plot_contour_ws{bank}")
+
+
+def test_plot_contour_skips_blank_banks():
+    workspaces = []
+    for bank, data in enumerate((np.random.rand(9), np.zeros(9)), start=1):
+        ws = CreateWorkspace(
+            DataX=np.tile([1.0, 2.0, 3.0], 3),
+            DataY=data,
+            NSpec=3,
+            UnitX="TOF",
+            VerticalAxisUnit="Label",
+            VerticalAxisValues=["500", "501", "502"],
+            OutputWorkspace=f"test_plot_contour_blank_ws{bank}",
+        )
+        ws.setTitle(f"bank {bank}")
+        workspaces.append(ws)
+
+    axes = plot_contour(workspaces, show=False)
+    assert len(axes) == 1
+    assert axes[0].get_title() == "bank 1"
+    for bank in (1, 2):
+        DeleteWorkspace(f"test_plot_contour_blank_ws{bank}")

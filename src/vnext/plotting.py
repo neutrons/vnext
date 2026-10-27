@@ -24,8 +24,10 @@ import matplotlib.pyplot as plt
 from mantid import plots  # noqa: F401  (registers the 'mantid' projection)
 from matplotlib.colors import LogNorm
 
-# plot_contour lays banks out in a grid this many subplots wide.
-CONTOUR_GRID_NCOLS = 3
+# When plot_pattern/plot_contour open one figure window per bank, cascade
+# each successive window this many pixels down and to the right so the
+# corner of every window underneath stays visible.
+CASCADE_OFFSET_PX = 40
 
 
 def _mantid_subplots(**kwargs):
@@ -37,6 +39,28 @@ def _mantid_subplots(**kwargs):
     subplot_kw = kwargs.pop("subplot_kw", {})
     subplot_kw.setdefault("projection", "mantid")
     return plt.subplots(subplot_kw=subplot_kw, **kwargs)
+
+
+def _cascade_figures(axes, *, offset: int = CASCADE_OFFSET_PX):
+    """Best-effort cascade each axes' figure window so lower ones peek out.
+
+    Each successive window is moved ``offset`` pixels down and to the right,
+    so that every window is visible.
+    """
+
+    first_window = getattr(axes[0].figure.canvas.manager, "window", None) if axes else None
+    if first_window is None:
+        return  # unsupported backend; leave default placement alone
+
+    for i, ax in enumerate(axes):
+        window = getattr(ax.figure.canvas.manager, "window", None)
+        if window is None:
+            continue
+        x, y = i * offset, i * offset
+        if hasattr(window, "move"):
+            window.move(x, y)
+        elif hasattr(window, "wm_geometry"):
+            window.wm_geometry(f"+{x}+{y}")
 
 
 def plot_log(workspace, name: str, *, ax=None, show: bool = False, full_time: bool = False):
@@ -59,65 +83,59 @@ def plot_log(workspace, name: str, *, ax=None, show: bool = False, full_time: bo
     return ax
 
 
-def plot_pattern(workspace, *, ax=None, show: bool = False):
-    """Plot a single run's GSAS pattern, overlaying each bank.
+def plot_pattern(workspace, *, show: bool = False):
+    """Plot a single run's GSAS pattern, one bank per figure window.
 
     ``workspace`` is the ``LoadGSS`` workspace; each spectrum is one bank.
     Drawing through the ``mantid`` projection takes the x unit (TOF / d-spacing)
-    and bin-centre handling from the workspace.  The figure title is taken from
-    the workspace title if one is set.
+    and bin-centre handling from the workspace.
+
+    Each bank opens in its own figure window.
+
+    Banks with no positive counts are skipped.
     """
 
-    if ax is None:
-        _, ax = _mantid_subplots()
-
-    for spec in range(workspace.getNumberHistograms()):
-        ax.plot(workspace, specNum=spec + 1, label=f"bank {spec + 1}")
     title = workspace.getTitle()
-    if title:
-        ax.set_title(title)
-    ax.legend()
+    axes = []
+    for spec in range(workspace.getNumberHistograms()):
+        if not (workspace.readY(spec) > 0).any():
+            continue
+        _, ax = _mantid_subplots()
+        ax.plot(workspace, specNum=spec + 1)
+        ax.set_ylabel("Intensity")
+        ax.set_title(f"{title} - bank {spec + 1}" if title else f"bank {spec + 1}")
+        axes.append(ax)
 
+    _cascade_figures(axes)
     if show:
         plt.show()
-    return ax
+    return axes
 
 
 def plot_contour(workspaces, *, show: bool = False):
-    """Plot sequential-run intensity as a 2-D colour map, one subplot per bank.
+    """Plot sequential-run intensity as a 2-D colour map, one figure window per bank.
 
     ``workspaces`` is a list of 2-D Mantid workspaces (one per bank), each with
     runs along the vertical axis.  The x unit comes from the workspace; the run
     axis is ticked with the run numbers but carries no axis label, matching the
-    VDRIVE convention; intensity is shown by the colour bar.  Banks are laid out in a grid ``CONTOUR_GRID_NCOLS``
-    wide.  Intensity is colour-mapped on a log scale (diffraction peaks span
-    orders of magnitude, so a linear scale washes out to near-uniform blocks);
-    banks with no positive counts fall back to a linear scale and are flagged
-    "(no data)".  Returns the list of axes drawn.
+    VDRIVE convention; intensity is shown by the colour bar.
+
+    Each bank opens in its own figure window.
+
+    Banks with no positive counts are skipped.
     """
 
-    ncols = min(CONTOUR_GRID_NCOLS, len(workspaces))
-    nrows = math.ceil(len(workspaces) / ncols)
-    fig, axes = _mantid_subplots(
-        nrows=nrows,
-        ncols=ncols,
-        squeeze=False,
-        figsize=(4.0 * ncols, 3.0 * nrows),
-        layout="constrained",
-    )
-    flat = axes.ravel()
     drawn = []
-    for ax, ws in zip(flat, workspaces):
-        title = ws.getTitle()
+    for ws in workspaces:
         intensity = ws.extractY()
         positive = intensity[intensity > 0]
+        if not positive.size:
+            continue
+        fig, ax = _mantid_subplots(layout="constrained")
+        title = ws.getTitle()
         # Mantid's pcolormesh inspects the norm kwarg if present, so only pass
         # it when there is a log scale to apply.
-        mesh_kwargs = {}
-        if positive.size:
-            mesh_kwargs["norm"] = LogNorm(vmin=positive.min(), vmax=positive.max())
-        else:
-            title = f"{title} (no data)" if title else "(no data)"
+        mesh_kwargs = {"norm": LogNorm(vmin=positive.min(), vmax=positive.max())}
         mesh = ax.pcolormesh(ws, **mesh_kwargs)
         ax.set_ylabel("")
         # A text vertical axis carries the run numbers, but Mantid places the
@@ -133,9 +151,8 @@ def plot_contour(workspaces, *, show: bool = False):
             ax.set_title(title)
         fig.colorbar(mesh, ax=ax, label="intensity")
         drawn.append(ax)
-    for ax in flat[len(workspaces) :]:
-        fig.delaxes(ax)
 
+    _cascade_figures(drawn)
     if show:
         plt.show()
     return drawn
